@@ -1,0 +1,58 @@
+{
+  "name": "claude-pr-analisys",
+  "version": "1.0.0",
+  "description": "A TypeScript module that uses Claude AI to analyze Jira tasks, GitHub diffs and code context to provide feedback on PRs",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "analyze-pr": "dist/analyze-pr.js",
+    "comment-pr": "dist/comment-pr.js"
+  },
+  "files": [
+    "dist/**/*",
+    "!dist/**/*.test.*"
+  ],
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "test": "node dist/tests/analyze-pr.test.js && node dist/tests/comment-pr.test.js && node dist/tests/pr-utils.test.js",
+    "test:watch": "npm run build:watch & npm run test",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "lint:ci": "eslint src/**/*.ts --format=github",
+    "format": "prettier --write src/**/*.ts",
+    "format:check": "prettier --check src/**/*.ts",
+    "format:ci": "prettier --check src/**/*.ts",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build",
+    "dev": "ts-node src/analyze-pr.ts"
+  },
+  "keywords": [
+    "github",
+    "jira",
+    "pr-analysis",
+    "claude-ai",
+    "automation",
+    "typescript",
+    "ci-cd"
+  ],
+  "author": "Anthony Rizzo",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "prettier": "^3.0.0",
+    "ts-node": "^10.0.0",
+    "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "gh": ">=2.0.0",
+    "jira": ">=1.0.0"
+  }
+}
