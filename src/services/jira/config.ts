@@ -11,6 +11,7 @@ export interface JiraConfig {
   apiToken: string;
   serverUrl: string;
   userEmail: string;
+  version: string;
 }
 
 // Jira environment validation result
@@ -47,10 +48,19 @@ export function loadJiraConfig(): JiraConfig {
   const userEmail = process.env.JIRA_USER_EMAIL;
   const customPattern = process.env.JIRA_TICKET_PATTERN;
 
-  const validation = validateJiraEnvironment(prefix, apiToken, serverUrl, userEmail);
+  const validation = validateJiraEnvironment(
+    prefix,
+    apiToken,
+    serverUrl,
+    userEmail
+  );
 
-  if (!validation.hasValidPrefix || !validation.hasValidToken || 
-      !validation.hasValidUrl || !validation.hasValidEmail) {
+  if (
+    !validation.hasValidPrefix ||
+    !validation.hasValidToken ||
+    !validation.hasValidUrl ||
+    !validation.hasValidEmail
+  ) {
     const errors = [
       !validation.hasValidPrefix && 'JIRA_TICKET_PREFIX is required',
       !validation.hasValidToken && 'JIRA_API_TOKEN is required',
@@ -63,7 +73,7 @@ export function loadJiraConfig(): JiraConfig {
   }
 
   const example = `${prefix}-1234`;
-  const pattern = customPattern 
+  const pattern = customPattern
     ? new RegExp(customPattern)
     : new RegExp(`${prefix}-\\d+`);
 
@@ -74,6 +84,7 @@ export function loadJiraConfig(): JiraConfig {
     apiToken: apiToken!,
     serverUrl: serverUrl!,
     userEmail: userEmail!,
+    version: 'latest', // Jira CLI version will be detected at runtime
   };
 }
 

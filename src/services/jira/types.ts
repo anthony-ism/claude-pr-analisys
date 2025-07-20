@@ -7,7 +7,10 @@
 export type JiraTicketId = string;
 
 // Jira CLI command types
-export type JiraCommand = 'jira issue view' | 'jira issue list' | 'jira issue create';
+export type JiraCommand =
+  | 'jira issue view'
+  | 'jira issue list'
+  | 'jira issue create';
 
 // Jira ticket data structure
 export interface JiraTicketData {

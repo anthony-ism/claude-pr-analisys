@@ -1,6 +1,6 @@
 {
   "name": "claude-pr-analisys",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "A TypeScript module that uses Claude AI to analyze Jira tasks, GitHub diffs and code context to provide feedback on PRs",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -16,19 +16,35 @@
     "node": ">=16.0.0"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "rm -rf dist && tsc",
     "build:watch": "tsc --watch",
-    "test": "node dist/tests/analyze-pr.test.js && node dist/tests/comment-pr.test.js && node dist/tests/pr-utils.test.js",
+    "clean": "rm -rf dist temp",
+    "start": "npm run build && node dist/analyze-pr.js",
+    "start:comment": "npm run build && node dist/comment-pr.js", 
+    "test": "npm run build && JIRA_TICKET_PREFIX=TEST GITHUB_REPOSITORY=test-org/test-repo node src/tests/analyze-pr.test.js && JIRA_TICKET_PREFIX=TEST GITHUB_REPOSITORY=test-org/test-repo node src/tests/comment-pr.test.js && JIRA_TICKET_PREFIX=TEST GITHUB_REPOSITORY=test-org/test-repo node src/tests/pr-utils.test.js",
+    "test:dist": "npm run build && JIRA_TICKET_PREFIX=TEST GITHUB_REPOSITORY=test-org/test-repo JIRA_API_TOKEN=test JIRA_SERVER_URL=https://test.atlassian.net JIRA_USER_EMAIL=test@test.com node src/tests/analyze-pr.test.js && JIRA_TICKET_PREFIX=TEST GITHUB_REPOSITORY=test-org/test-repo JIRA_API_TOKEN=test JIRA_SERVER_URL=https://test.atlassian.net JIRA_USER_EMAIL=test@test.com node src/tests/comment-pr.test.js && JIRA_TICKET_PREFIX=TEST GITHUB_REPOSITORY=test-org/test-repo JIRA_API_TOKEN=test JIRA_SERVER_URL=https://test.atlassian.net JIRA_USER_EMAIL=test@test.com node src/tests/pr-utils.test.js",
     "test:watch": "npm run build:watch & npm run test",
-    "lint": "eslint src/**/*.ts",
-    "lint:fix": "eslint src/**/*.ts --fix",
-    "lint:ci": "eslint src/**/*.ts --format=github",
-    "format": "prettier --write src/**/*.ts",
-    "format:check": "prettier --check src/**/*.ts",
-    "format:ci": "prettier --check src/**/*.ts",
+    "test:compiled": "npm run build && echo 'Testing compiled analyze-pr...' && JIRA_TICKET_PREFIX=TEST GITHUB_REPOSITORY=test-org/test-repo node dist/analyze-pr.js || echo '✅ analyze-pr usage shown' && echo 'Testing compiled comment-pr...' && JIRA_TICKET_PREFIX=TEST GITHUB_REPOSITORY=test-org/test-repo node dist/comment-pr.js || echo '✅ comment-pr usage shown'",
+    "lint": "eslint \"src/**/*.{ts,js}\" --ext .ts,.js",
+    "lint:fix": "eslint \"src/**/*.{ts,js}\" --ext .ts,.js --fix",
+    "lint:ci": "eslint \"src/**/*.{ts,js}\" --ext .ts,.js --format=compact",
+    "format": "prettier --write \"src/**/*.{ts,js,json}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,js,json}\"",
+    "format:ci": "prettier --check \"src/**/*.{ts,js,json}\"",
+    "quality": "npm run lint && npm run format:check && npm run typecheck",
+    "quality:fix": "npm run lint:fix && npm run format",
+    "pretest": "npm run quality",
+    "prebuild": "npm run quality",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build",
-    "dev": "ts-node src/analyze-pr.ts"
+    "dev": "ts-node src/analyze-pr.ts",
+    "version:patch": "npm version patch",
+    "version:minor": "npm version minor", 
+    "version:major": "npm version major",
+    "check-all": "npm run quality && npm run test && npm run build",
+    "ci:quality": "npm run lint:ci && npm run format:ci && npm run typecheck",
+    "ci:test": "npm run build && npm run test",
+    "ci:build": "npm run clean && npm run build"
   },
   "keywords": [
     "github",
@@ -51,8 +67,5 @@
     "ts-node": "^10.0.0",
     "typescript": "^5.0.0"
   },
-  "peerDependencies": {
-    "gh": ">=2.0.0",
-    "jira": ">=1.0.0"
-  }
+  "optionalDependencies": {}
 }

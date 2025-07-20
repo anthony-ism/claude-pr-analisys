@@ -5,22 +5,20 @@
 
 // GitHub service configuration interface
 export interface GitHubConfig {
-  token: string;
   repository: string;
   owner: string;
   repo: string;
+  version: string;
 }
 
 // GitHub environment validation result
 export interface GitHubValidation {
-  hasValidToken: boolean;
   hasValidRepository: boolean;
   formatErrors: string[];
 }
 
 // Required environment variables for GitHub service
 export const GITHUB_ENV_VARS = {
-  GITHUB_TOKEN: 'GITHUB_TOKEN',
   GITHUB_REPOSITORY: 'GITHUB_REPOSITORY',
 } as const;
 
@@ -30,15 +28,13 @@ export const GITHUB_ENV_VARS = {
  * @throws Error if required environment variables are missing or invalid
  */
 export function loadGitHubConfig(): GitHubConfig {
-  const token = process.env.GITHUB_TOKEN;
   const repository = process.env.GITHUB_REPOSITORY;
 
-  const validation = validateGitHubEnvironment(token, repository);
+  const validation = validateGitHubEnvironment(repository);
 
-  if (!validation.hasValidToken || !validation.hasValidRepository) {
+  if (!validation.hasValidRepository) {
     const errors = [
-      !validation.hasValidToken && 'GITHUB_TOKEN is required',
-      !validation.hasValidRepository && 'GITHUB_REPOSITORY is required',
+      'GITHUB_REPOSITORY is required',
       ...validation.formatErrors,
     ].filter(Boolean);
 
@@ -46,28 +42,28 @@ export function loadGitHubConfig(): GitHubConfig {
   }
 
   const [owner, repo] = repository!.split('/');
+  if (!owner || !repo) {
+    throw new Error('GITHUB_REPOSITORY must be in format "owner/repo"');
+  }
 
   return {
-    token: token!,
     repository: repository!,
     owner,
     repo,
+    version: 'latest', // GitHub CLI version will be detected at runtime
   };
 }
 
 /**
  * Validate GitHub environment variables
- * @param token GitHub personal access token
  * @param repository Repository in format "owner/repo"
  * @returns Validation result
  */
 export function validateGitHubEnvironment(
-  token?: string,
   repository?: string
 ): GitHubValidation {
   const formatErrors: string[] = [];
 
-  const hasValidToken = Boolean(token && token.length > 0);
   let hasValidRepository = Boolean(repository && repository.length > 0);
 
   if (repository && !repository.includes('/')) {
@@ -81,7 +77,6 @@ export function validateGitHubEnvironment(
   }
 
   return {
-    hasValidToken,
     hasValidRepository,
     formatErrors,
   };
@@ -93,11 +88,10 @@ export function validateGitHubEnvironment(
  */
 export function getGitHubSetupInstructions(): string {
   return `🔧 GitHub Setup:
-  export GITHUB_TOKEN=your_github_personal_access_token
   export GITHUB_REPOSITORY=owner/repository-name
 
-To create a GitHub personal access token:
-1. Go to GitHub Settings > Developer settings > Personal access tokens
-2. Generate new token with 'repo' scope
-3. Copy the token and set it as GITHUB_TOKEN environment variable`;
+To use GitHub CLI:
+1. Install GitHub CLI: brew install gh (or see https://cli.github.com/)
+2. Authenticate: gh auth login
+3. Set repository: export GITHUB_REPOSITORY=owner/repo-name`;
 }
