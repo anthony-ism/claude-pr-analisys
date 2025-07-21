@@ -11,7 +11,7 @@ export interface ClaudeMockResponse {
 }
 
 export interface ClaudeMockResponses {
-  analyze: (prompt?: string) => ClaudeMockResponse;
+  analyze: (_prompt?: string) => ClaudeMockResponse;
   version: ClaudeMockResponse;
   help: ClaudeMockResponse;
   config: ClaudeMockResponse;
@@ -167,7 +167,7 @@ High confidence this solution addresses the immediate problem. The implementatio
  * Mock Claude CLI responses for testing
  */
 export const mockClaudeResponses: ClaudeMockResponses = {
-  analyze: (_prompt?: string): ClaudeMockResponse => ({
+  analyze: (): ClaudeMockResponse => ({
     stdout: getMockClaudeResponse(),
   }),
 

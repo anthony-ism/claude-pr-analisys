@@ -93,11 +93,11 @@ Examples:
   config: { stdout: 'Configuration updated successfully' },
 
   // Analysis operations
-  analyze: (_input?: string): { stdout: string } => ({
+  analyze: (): { stdout: string } => ({
     stdout: generateMockAnalysis(),
   }),
 
-  analyzeFromFile: (_filePath?: string): { stdout: string } => ({
+  analyzeFromFile: (): { stdout: string } => ({
     stdout: generateMockAnalysis(),
   }),
 
@@ -159,13 +159,12 @@ function getClaudeMockResponse(
   // Analysis from file (stdin redirect)
   const analyzeFileMatch = command.match(claudeCommandPatterns.analyzeFromFile);
   if (analyzeFileMatch) {
-    const filePath = analyzeFileMatch[1];
-    return claudeCLIResponses.analyzeFromFile(filePath);
+    return claudeCLIResponses.analyzeFromFile();
   }
 
   // Direct analysis command
   if (claudeCommandPatterns.analyze.test(command)) {
-    return claudeCLIResponses.analyze(command);
+    return claudeCLIResponses.analyze();
   }
 
   // Authentication commands

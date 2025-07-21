@@ -4,7 +4,7 @@
  * Description: Tests for the refactored analyze-pr script using Vitest
  */
 
-import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import {
   MockExecutor,
   MockReadline,
@@ -182,7 +182,7 @@ describe('Analyze PR Test Suite', () => {
     newFiles.forEach(file => {
       try {
         fs.unlinkSync(path.join(tempDir, file));
-      } catch (e) {
+      } catch {
         // Ignore cleanup errors
       }
     });

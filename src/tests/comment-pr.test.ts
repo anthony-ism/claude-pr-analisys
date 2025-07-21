@@ -14,7 +14,7 @@ import {
   setupEnhancedMocks,
 } from '../utils/test-utils';
 
-import * as path from 'path';
+// Path import available globally via Node.js
 
 // Import modules directly from TypeScript source
 import * as commentPr from '../comment-pr';

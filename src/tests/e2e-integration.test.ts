@@ -160,7 +160,7 @@ Acceptance Criteria:
       }
 
       return false;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -176,7 +176,7 @@ Acceptance Criteria:
       await mockExec.execute(command);
       // If no error thrown, assume success
       return expectedAvailable;
-    } catch (error) {
+    } catch {
       return !expectedAvailable;
     }
   }
@@ -188,7 +188,7 @@ Acceptance Criteria:
     try {
       const fullPath = path.resolve(process.cwd(), filePath);
       return fs.existsSync(fullPath);
-    } catch (error) {
+    } catch {
       return false;
     }
   }

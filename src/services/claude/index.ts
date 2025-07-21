@@ -42,12 +42,13 @@ let mockResponses: Record<string, unknown> | null = null;
 let cliResponses: Record<string, string> | null = null;
 let errorResponses: Record<string, string> | null = null;
 let commandPatterns: Record<string, RegExp> | null = null;
-let getMockResponse: ((command: string) => string | null) | null = null;
-let generateAnalysis: ((prData: unknown, jiraData: unknown) => string) | null =
-  null;
+let getMockResponse: ((_command: string) => string | null) | null = null;
+let generateAnalysis:
+  | ((_prData: unknown, _jiraData: unknown) => string)
+  | null = null;
 let getTestPrompts: (() => string[]) | null = null;
 let getResponseScenarios: (() => Record<string, string>) | null = null;
-let isValidCommand: ((command: string) => boolean) | null = null;
+let isValidCommand: ((_command: string) => boolean) | null = null;
 
 try {
   const mockModule = require('./mock-responses');
@@ -70,7 +71,7 @@ try {
     getResponseScenarios,
     isValidCommand,
   };
-} catch (err) {
+} catch (_err) {
   // Mock responses not available in production build
 }
 

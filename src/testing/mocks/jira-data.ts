@@ -11,7 +11,7 @@ export interface JiraMockResponse {
 }
 
 export interface JiraMockResponses {
-  issueView: (ticketId: string) => JiraMockResponse;
+  issueView: (_ticketId: string) => JiraMockResponse;
   version: JiraMockResponse;
   me: JiraMockResponse;
   issueList: JiraMockResponse;

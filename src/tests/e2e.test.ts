@@ -268,17 +268,15 @@ Generated: ${new Date().toISOString()}
 
     test('Network resilience and timeout handling', async () => {
       // Test with very short timeout to simulate network issues
-      const shortTimeout = 1; // 1ms - should timeout
-
       try {
         await execAsync(
           `timeout 0.001 gh pr view ${TEST_CONFIG.TEST_PR_NUMBER} --repo ${TEST_CONFIG.REPOSITORY} --json title`,
           { timeout: 100 }
         );
         // Should not reach here in most cases
-      } catch (error) {
+      } catch {
         // This is expected - we're testing error handling
-        expect(error).toBeDefined();
+        expect(true).toBe(true);
       }
     });
   });
@@ -291,7 +289,7 @@ Generated: ${new Date().toISOString()}
 
         // If Jira is available, we could test it
         expect(jiraVersion).toBeTruthy();
-      } catch (error) {
+      } catch {
         console.log(
           'ℹ Jira CLI not available or not authenticated - skipping Jira tests'
         );

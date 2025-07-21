@@ -26,9 +26,9 @@ export interface GitHubMockResponse {
 }
 
 export interface GitHubMockResponses {
-  prView: (prNumber: number) => GitHubMockResponse;
-  prDiff: (prNumber: number) => GitHubMockResponse;
-  prJSON: (prNumber: number) => GitHubMockResponse;
+  prView: (_prNumber: number) => GitHubMockResponse;
+  prDiff: (_prNumber: number) => GitHubMockResponse;
+  prJSON: (_prNumber: number) => GitHubMockResponse;
   prComment: GitHubMockResponse;
   version: GitHubMockResponse;
   authStatus: GitHubMockResponse;
