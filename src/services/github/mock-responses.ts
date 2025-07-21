@@ -15,7 +15,7 @@ const githubCLIResponses = {
   authLogin: { stdout: 'Authentication complete' },
 
   // PR operations
-  prView: prNumber => {
+  prView: (prNumber: number): { stdout: string } => {
     const ticketId = getTestTicketId();
     return {
       stdout: `title: ${ticketId}: Unable to set forms to Ready to Read
@@ -29,7 +29,7 @@ deletions: -0`,
     };
   },
 
-  prDiff: _prNumber => ({
+  prDiff: (_prNumber: number): { stdout: string } => ({
     stdout: `diff --git a/TriggerHandler.cls b/TriggerHandler.cls
 index ccdfba89c..6c513312d 100644
 --- a/TriggerHandler.cls
@@ -40,7 +40,7 @@ index ccdfba89c..6c513312d 100644
 +  public static Boolean stopFormValidation = false;`,
   }),
 
-  prJSON: prNumber => {
+  prJSON: (prNumber: number): { stdout: string } => {
     const ticketId = getTestTicketId();
     return {
       stdout: JSON.stringify({
@@ -54,7 +54,7 @@ index ccdfba89c..6c513312d 100644
     };
   },
 
-  prComment: (prNumber, _content) => ({
+  prComment: (prNumber: number, _content: string): { stdout: string } => ({
     stdout: `Comment added to pull request #${prNumber}`,
   }),
 
@@ -93,7 +93,9 @@ const githubCommandPatterns = {
  * @param {string} command - Full command string
  * @returns {Object|null} Mock response or null if no match
  */
-function getGitHubMockResponse(command) {
+function getGitHubMockResponse(
+  command: string
+): { stdout: string; stderr?: string } | null {
   // PR view command
   const prViewMatch = command.match(githubCommandPatterns.prView);
   if (prViewMatch) {

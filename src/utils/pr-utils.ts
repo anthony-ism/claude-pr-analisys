@@ -8,7 +8,8 @@ import * as readline from 'readline';
 import * as fs from 'fs';
 import * as path from 'path';
 import { promisify } from 'util';
-import { exec } from 'child_process';
+import type { JiraConfig } from '../services/jira/config';
+import { exec, ExecOptions } from 'child_process';
 
 // Service imports
 import {
@@ -28,7 +29,7 @@ import { loadAppConfig } from '../core';
 interface UtilDependencies {
   execAsync: (
     command: string,
-    options?: any
+    options?: ExecOptions
   ) => Promise<{ stdout: string; stderr: string }>;
   readline: typeof readline;
   fs: typeof fs;
@@ -110,7 +111,7 @@ export { gatherPRData } from '../services/github';
  * Load Jira configuration
  * @returns Jira configuration object
  */
-export function loadJiraConfig() {
+export function loadJiraConfig(): JiraConfig {
   return getJiraConfig();
 }
 

@@ -17,6 +17,9 @@ export interface MockPRData {
   deletions: number;
 }
 
+// Alias for GitHubPRData (used by test files)
+export interface GitHubPRData extends MockPRData {}
+
 export interface MockJiraData {
   key: string;
   summary: string;

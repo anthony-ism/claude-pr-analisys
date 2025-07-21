@@ -70,9 +70,14 @@ async function executeClaudeCommand(
       stderr: result.stderr,
       exitCode: 0,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Handle different types of errors
-    if (error.code === 'ENOENT') {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      error.code === 'ENOENT'
+    ) {
       throw new ClaudeError(
         ClaudeErrorType.CLI_NOT_FOUND,
         'Claude CLI not found. Please install @anthropic-ai/claude-code',
@@ -80,7 +85,12 @@ async function executeClaudeCommand(
       );
     }
 
-    if (error.signal === 'SIGTERM' || error.killed) {
+    if (
+      error &&
+      typeof error === 'object' &&
+      (('signal' in error && error.signal === 'SIGTERM') ||
+        ('killed' in error && error.killed))
+    ) {
       throw new ClaudeError(
         ClaudeErrorType.NETWORK_ERROR,
         `Claude CLI command timed out after ${timeout}ms`,
@@ -89,7 +99,13 @@ async function executeClaudeCommand(
     }
 
     // Check stderr for specific error patterns
-    const stderr = error.stderr || '';
+    const stderr =
+      error &&
+      typeof error === 'object' &&
+      'stderr' in error &&
+      typeof error.stderr === 'string'
+        ? error.stderr
+        : '';
     if (stderr.includes('rate limit')) {
       throw new ClaudeError(
         ClaudeErrorType.RATE_LIMIT_ERROR,
@@ -115,9 +131,16 @@ async function executeClaudeCommand(
     }
 
     // Generic error
+    const message =
+      error &&
+      typeof error === 'object' &&
+      'message' in error &&
+      typeof error.message === 'string'
+        ? error.message
+        : 'Unknown error occurred';
     throw new ClaudeError(
       ClaudeErrorType.UNKNOWN_ERROR,
-      `Claude CLI command failed: ${error.message}`,
+      `Claude CLI command failed: ${message}`,
       { command, originalError: error }
     );
   }

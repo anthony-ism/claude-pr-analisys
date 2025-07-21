@@ -5,7 +5,7 @@
 
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { loadJiraConfig } from './config';
+import { loadJiraConfig, type JiraConfig } from './config';
 
 // Default async exec function
 const defaultExecAsync = promisify(exec);
@@ -37,13 +37,17 @@ export enum JiraErrorType {
 // Jira service error
 export class JiraError extends Error {
   public readonly type: JiraErrorType;
-  public readonly details?: any;
+  public readonly details?: Record<string, unknown> | string | null | undefined;
 
-  constructor(type: JiraErrorType, message: string, details?: any) {
+  constructor(
+    type: JiraErrorType,
+    message: string,
+    details?: Record<string, unknown> | string | null | undefined
+  ) {
     super(message);
     this.name = 'JiraError';
     this.type = type;
-    this.details = details;
+    this.details = details ?? undefined;
   }
 }
 
@@ -89,9 +93,14 @@ async function executeJiraCommand(
       stdout: result.stdout,
       stderr: result.stderr,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Handle different types of errors
-    if (error.code === 'ENOENT') {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      error.code === 'ENOENT'
+    ) {
       throw new JiraError(
         JiraErrorType.CLI_NOT_FOUND,
         'Jira CLI not found. Please install jira-cli',
@@ -99,7 +108,12 @@ async function executeJiraCommand(
       );
     }
 
-    if (error.signal === 'SIGTERM' || error.killed) {
+    if (
+      error &&
+      typeof error === 'object' &&
+      (('signal' in error && error.signal === 'SIGTERM') ||
+        ('killed' in error && error.killed))
+    ) {
       throw new JiraError(
         JiraErrorType.NETWORK_ERROR,
         `Jira CLI command timed out after ${timeout}ms`,
@@ -108,7 +122,13 @@ async function executeJiraCommand(
     }
 
     // Check stderr for specific error patterns
-    const stderr = error.stderr || '';
+    const stderr =
+      error &&
+      typeof error === 'object' &&
+      'stderr' in error &&
+      typeof error.stderr === 'string'
+        ? error.stderr
+        : '';
     if (
       stderr.includes('Issue not found') ||
       stderr.includes('does not exist')
@@ -160,9 +180,16 @@ async function executeJiraCommand(
     }
 
     // Generic error
+    const message =
+      error &&
+      typeof error === 'object' &&
+      'message' in error &&
+      typeof error.message === 'string'
+        ? error.message
+        : 'Unknown error occurred';
     throw new JiraError(
       JiraErrorType.UNKNOWN_ERROR,
-      `Jira CLI command failed: ${error.message}`,
+      `Jira CLI command failed: ${message}`,
       { command, originalError: error }
     );
   }
@@ -264,11 +291,11 @@ export async function gatherJiraData(
  * Get Jira configuration and validate environment
  * @returns Jira configuration with loaded and validated settings
  */
-export function getJiraConfig() {
+export function getJiraConfig(): JiraConfig {
   return loadJiraConfig();
 }
 
 // Type guards
-export function isJiraError(error: any): error is JiraError {
+export function isJiraError(error: unknown): error is JiraError {
   return error instanceof JiraError;
 }

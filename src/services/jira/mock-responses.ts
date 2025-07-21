@@ -15,7 +15,7 @@ const jiraCLIResponses = {
   init: { stdout: 'Jira CLI initialized successfully' },
 
   // Issue operations
-  issueView: ticketId => {
+  issueView: (ticketId: string): { stdout: string } => {
     const ticket = ticketId || getTestTicketId();
     return {
       stdout: `🐞 Bug  🚧 Ready to Test  ⌛ Sat, 19 Jul 25  👷 Test User  🔑️ ${ticket}  💭 2 comments
@@ -56,11 +56,11 @@ TEST-1234  Another test issue                              Story   In Progress  
 TEST-5678  Feature request                                 Story   To Do           test-user`,
   },
 
-  issueCreate: _summary => ({
+  issueCreate: (_summary: string): { stdout: string } => ({
     stdout: `Issue ${getTestTicketId()} created successfully`,
   }),
 
-  issueUpdate: ticketId => ({
+  issueUpdate: (ticketId: string): { stdout: string } => ({
     stdout: `Issue ${ticketId} updated successfully`,
   }),
 };
@@ -98,7 +98,9 @@ const jiraCommandPatterns = {
  * @param {string} command - Full command string
  * @returns {Object|null} Mock response or null if no match
  */
-function getJiraMockResponse(command) {
+function getJiraMockResponse(
+  command: string
+): { stdout: string; stderr?: string } | null {
   // Issue view command
   const issueViewMatch = command.match(jiraCommandPatterns.issueView);
   if (issueViewMatch) {
@@ -149,7 +151,7 @@ function getJiraMockResponse(command) {
 /**
  * Generate test ticket patterns for validation testing
  */
-function getJiraTestPatterns() {
+function getJiraTestPatterns(): Record<string, RegExp> {
   const prefix = process.env.JIRA_TICKET_PREFIX || 'TEST';
   return {
     validTickets: [`${prefix}-1234`, `${prefix}-2055`, `${prefix}-9999`],
@@ -179,7 +181,7 @@ function getJiraTestPatterns() {
  * @param {string} command - Command to validate
  * @returns {boolean} True if command format is valid
  */
-function isValidJiraCommand(command) {
+function isValidJiraCommand(command: string): boolean {
   return Object.values(jiraCommandPatterns).some(pattern =>
     pattern.test(command)
   );
