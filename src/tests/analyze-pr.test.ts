@@ -29,8 +29,8 @@ import * as prUtils from '../utils/pr-utils';
 
 // Get test data from shared mock system
 const mockPRData = getMockPRData() as GitHubPRData;
-const mockJiraData = getMockJiraData() as string;
-const testTicketId = getTestTicketId() as string;
+const mockJiraData = getMockJiraData();
+const testTicketId = getTestTicketId();
 
 // Create mock instances
 const mockExecutor = new MockExecutor();
@@ -107,7 +107,7 @@ describe('Analyze PR Test Suite', () => {
 
   test('Usage function provides help text', async () => {
     expect(typeof analyzePr.usage).toBe('function');
-    
+
     // Should not throw when called
     expect(() => analyzePr.usage()).not.toThrow();
   });
@@ -124,7 +124,9 @@ describe('Analyze PR Test Suite', () => {
     const prData = await prUtils.gatherPRData('393');
     expect(prData).toBeTruthy();
 
-    const jiraTicket = prUtils.extractJiraTicket(`${testTicketId}: Test ticket`);
+    const jiraTicket = prUtils.extractJiraTicket(
+      `${testTicketId}: Test ticket`
+    );
     expect(jiraTicket).toBe(testTicketId);
   });
 

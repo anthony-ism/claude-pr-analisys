@@ -3,7 +3,7 @@
  * Author: Anthony Rizzo, Co-pilot: Claude
  */
 
-const { getTestTicketId } = require('../utils/test-helpers');
+import { getTestTicketId } from '../utils/test-helpers';
 
 export interface ClaudeMockResponse {
   stdout: string;
@@ -47,7 +47,7 @@ export function getMockClaudePrompt(
   prData?: MockPRData | null,
   jiraData?: string
 ): string {
-  const ticket = ticketId || (getTestTicketId() as string);
+  const ticket = ticketId || getTestTicketId();
   const prNum = prNumber || '123';
 
   return `I need you to analyze a GitHub pull request against its associated Jira ticket and provide a comprehensive analysis.
@@ -108,7 +108,7 @@ IMPORTANT: End your analysis with the following attribution:
  * Generate mock Claude response for testing
  */
 export function getMockClaudeResponse(ticketId?: string): string {
-  const ticket = ticketId || (getTestTicketId() as string);
+  const ticket = ticketId || getTestTicketId();
   return `## ${ticket} Ticket vs PR Analysis
 
 ### Context Summary
@@ -191,7 +191,7 @@ Options:
  * Generate sample prompts for different scenarios
  */
 export function getMockPromptVariations(): PromptVariations {
-  const ticketId = getTestTicketId() as string;
+  const ticketId = getTestTicketId();
   return {
     bugFix: getMockClaudePrompt(
       '123',

@@ -579,7 +579,7 @@ export function setupEnhancedMocks(
   );
   mockExecutor.setRegexResponse(
     /^gh pr comment \d+/,
-    github.responses.prComment
+    github.responses.prComment(123, 'test comment')
   );
   mockExecutor.setRegexResponse(/^gh --version/, github.responses.version);
 

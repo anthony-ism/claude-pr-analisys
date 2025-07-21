@@ -3,7 +3,7 @@
  * Author: Anthony Rizzo, Co-pilot: Claude
  */
 
-const { getTestTicketId } = require('../../testing/utils/test-helpers');
+import { getTestTicketId } from '../../testing/utils/test-helpers';
 
 /**
  * GitHub CLI command mock responses
@@ -98,30 +98,31 @@ function getGitHubMockResponse(
 ): { stdout: string; stderr?: string } | null {
   // PR view command
   const prViewMatch = command.match(githubCommandPatterns.prView);
-  if (prViewMatch) {
-    const prNumber = prViewMatch[1];
+  if (prViewMatch && prViewMatch[1]) {
+    const prNumber = parseInt(prViewMatch[1]);
     return githubCLIResponses.prView(prNumber);
   }
 
   // PR diff command
   const prDiffMatch = command.match(githubCommandPatterns.prDiff);
-  if (prDiffMatch) {
-    const prNumber = prDiffMatch[1];
+  if (prDiffMatch && prDiffMatch[1]) {
+    const prNumber = parseInt(prDiffMatch[1]);
     return githubCLIResponses.prDiff(prNumber);
   }
 
   // PR JSON command
   const prJSONMatch = command.match(githubCommandPatterns.prJSON);
-  if (prJSONMatch) {
-    const prNumber = prJSONMatch[1];
+  if (prJSONMatch && prJSONMatch[1]) {
+    const prNumber = parseInt(prJSONMatch[1]);
     return githubCLIResponses.prJSON(prNumber);
   }
 
   // PR comment command
   const prCommentMatch = command.match(githubCommandPatterns.prComment);
-  if (prCommentMatch) {
-    const prNumber = prCommentMatch[1];
-    return githubCLIResponses.prComment(prNumber);
+  if (prCommentMatch && prCommentMatch[1]) {
+    const prNumber = parseInt(prCommentMatch[1]);
+    const content = prCommentMatch[2] || '';
+    return githubCLIResponses.prComment(prNumber, content);
   }
 
   // Version command
@@ -137,7 +138,7 @@ function getGitHubMockResponse(
   return null;
 }
 
-module.exports = {
+export {
   githubCLIResponses,
   githubErrorResponses,
   githubCommandPatterns,

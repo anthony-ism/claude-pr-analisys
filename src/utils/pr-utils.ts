@@ -259,3 +259,29 @@ export function displayHelp(): void {
   printStatus('yellow', '  ⚠️  Jira CLI - Optional for Jira integration');
   printStatus('yellow', '  ⚠️  Claude CLI - Optional for AI analysis');
 }
+
+// Additional exports expected by tests
+export function validateEnvironment(): boolean {
+  try {
+    const githubRepo = process.env.GITHUB_REPOSITORY;
+    const jiraPrefix = process.env.JIRA_TICKET_PREFIX;
+    return !!(githubRepo && jiraPrefix);
+  } catch {
+    return false;
+  }
+}
+
+export function getGitHubPatterns(): Record<string, RegExp> {
+  return {
+    prNumber: /^\d+$/,
+    repository: /^[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/,
+  };
+}
+
+export function getJiraPatterns(): Record<string, RegExp> {
+  const prefix = process.env.JIRA_TICKET_PREFIX || 'TEST';
+  return {
+    ticket: new RegExp(`^${prefix}-\\d+$`),
+    title: new RegExp(`${prefix}-\\d+`),
+  };
+}
