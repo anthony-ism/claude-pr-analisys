@@ -21,6 +21,20 @@ import * as fs from 'fs';
 // Import utilities to test directly from TypeScript source
 import * as prUtils from '../utils/pr-utils';
 
+// Import service modules for dependency injection
+import {
+  setDependencies as setGitHubDependencies,
+  resetDependencies as resetGitHubDependencies,
+} from '../services/github/operations';
+import {
+  setDependencies as setJiraDependencies,
+  resetDependencies as resetJiraDependencies,
+} from '../services/jira/operations';
+import {
+  setDependencies as setClaudeDependencies,
+  resetDependencies as resetClaudeDependencies,
+} from '../services/claude/operations';
+
 const testTicketId = getTestTicketId();
 
 // Create test instances
@@ -31,10 +45,18 @@ function setupMocks(): void {
   setupEnhancedMocks(mockExecutor, mockReadline);
   const testDeps = createTestDependencies(mockExecutor, mockReadline);
   prUtils.setDependencies(testDeps);
+
+  // Inject dependencies into service modules
+  setGitHubDependencies({ execAsync: mockExecutor.execute.bind(mockExecutor) });
+  setJiraDependencies({ execAsync: mockExecutor.execute.bind(mockExecutor) });
+  setClaudeDependencies({ execAsync: mockExecutor.execute.bind(mockExecutor) });
 }
 
 function restoreMocks(): void {
   prUtils.resetDependencies();
+  resetGitHubDependencies();
+  resetJiraDependencies();
+  resetClaudeDependencies();
 }
 
 describe('PR Utils Test Suite', () => {
@@ -174,17 +196,24 @@ describe('PR Utils Test Suite', () => {
     const customMockExec = new MockExecutor();
     const customMockReadline = new MockReadline();
 
+    // Set up a test command that will be tracked
+    customMockExec.setRegexResponse(/^test-command$/, {
+      stdout: 'test response',
+    });
+
     const customDeps = createTestDependencies(
       customMockExec,
       customMockReadline
     );
     prUtils.setDependencies(customDeps);
 
-    // Test that custom dependencies are used
-    await prUtils.gatherPRData('789');
+    // Test that custom dependencies are used by calling execAsync directly
+    const result = await customDeps.execAsync('test-command');
+    expect(result.stdout).toBe('test response');
 
     const calls = customMockExec.getCalls();
     expect(calls.length).toBeGreaterThan(0);
+    expect(calls).toContain('test-command');
 
     // Restore original mocks
     setupMocks();

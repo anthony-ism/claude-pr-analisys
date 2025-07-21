@@ -18,14 +18,27 @@ import {
   getMockJiraData,
 } from '../testing/mocks';
 
-import { GitHubPRData } from '../services/github/operations';
-
 import * as fs from 'fs';
 import * as path from 'path';
 
 // Import modules directly from TypeScript source
 import * as analyzePr from '../analyze-pr';
 import * as prUtils from '../utils/pr-utils';
+
+// Import service modules for dependency injection
+import {
+  GitHubPRData,
+  setDependencies as setGitHubDependencies,
+  resetDependencies as resetGitHubDependencies,
+} from '../services/github/operations';
+import {
+  setDependencies as setJiraDependencies,
+  resetDependencies as resetJiraDependencies,
+} from '../services/jira/operations';
+import {
+  setDependencies as setClaudeDependencies,
+  resetDependencies as resetClaudeDependencies,
+} from '../services/claude/operations';
 
 // Get test data from shared mock system
 const mockPRData = getMockPRData() as GitHubPRData;
@@ -43,10 +56,18 @@ function setupMocks(): void {
   // Inject dependencies into pr-utils
   const testDeps = createTestDependencies(mockExecutor, mockReadline);
   prUtils.setDependencies(testDeps);
+
+  // Inject dependencies into service modules
+  setGitHubDependencies({ execAsync: mockExecutor.execute.bind(mockExecutor) });
+  setJiraDependencies({ execAsync: mockExecutor.execute.bind(mockExecutor) });
+  setClaudeDependencies({ execAsync: mockExecutor.execute.bind(mockExecutor) });
 }
 
 function restoreMocks(): void {
   prUtils.resetDependencies();
+  resetGitHubDependencies();
+  resetJiraDependencies();
+  resetClaudeDependencies();
 }
 
 describe('Analyze PR Test Suite', () => {
@@ -76,33 +97,20 @@ describe('Analyze PR Test Suite', () => {
 
   test('Call Claude function creates timestamped file', async () => {
     const testPrompt = 'Test prompt for Claude analysis';
+    const mockContext = {
+      prNumber: '123',
+      repository: 'test-org/test-repo',
+      timestamp: new Date(),
+      ticketId: testTicketId,
+    };
 
-    const result = await analyzePr.callClaude(testPrompt);
+    const result = await analyzePr.callClaude(testPrompt, mockContext);
 
     expect(result).toBeTruthy();
-    expect(result).toBe(testPrompt);
+    expect(result.success).toBe(true);
+    expect(result.content).toContain('TEST-2055');
 
-    // File should be created (check temp directory)
-    const tempDir = path.join(process.cwd(), 'temp');
-
-    if (fs.existsSync(tempDir)) {
-      const files = fs.readdirSync(tempDir);
-      const promptFiles = files.filter(f => f.startsWith('claude-prompt-'));
-      expect(promptFiles.length).toBeGreaterThan(0);
-
-      // Cleanup newest file
-      if (promptFiles.length > 0) {
-        const latestFile = promptFiles.sort().pop();
-        if (latestFile) {
-          const filePath = path.join(tempDir, latestFile);
-          try {
-            fs.unlinkSync(filePath);
-          } catch (e) {
-            // Ignore cleanup errors
-          }
-        }
-      }
-    }
+    // Test completed - callClaude returns analysis result, doesn't create files
   });
 
   test('Usage function provides help text', async () => {
@@ -156,10 +164,18 @@ describe('Analyze PR Test Suite', () => {
 
     const beforeFiles = fs.existsSync(tempDir) ? fs.readdirSync(tempDir) : [];
 
-    await analyzePr.callClaude('Test content');
+    // Test createTimestampedFile function which actually creates files
+    const testContent = 'Test claude prompt content for file creation';
+    const filePath = prUtils.createTimestampedFile(
+      testContent,
+      'claude-prompt',
+      'txt'
+    );
 
     const afterFiles = fs.readdirSync(tempDir);
     expect(afterFiles.length).toBeGreaterThan(beforeFiles.length);
+    expect(filePath).toContain('claude-prompt');
+    expect(fs.existsSync(filePath)).toBe(true);
 
     // Find and cleanup the new file
     const newFiles = afterFiles.filter(f => !beforeFiles.includes(f));

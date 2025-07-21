@@ -273,6 +273,7 @@ export function validateEnvironment(): boolean {
 
 export function getGitHubPatterns(): Record<string, RegExp> {
   return {
+    valid: /^\d+$/,
     prNumber: /^\d+$/,
     repository: /^[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/,
   };
@@ -281,6 +282,7 @@ export function getGitHubPatterns(): Record<string, RegExp> {
 export function getJiraPatterns(): Record<string, RegExp> {
   const prefix = process.env.JIRA_TICKET_PREFIX || 'TEST';
   return {
+    valid: new RegExp(`^${prefix}-\\d+$`),
     ticket: new RegExp(`^${prefix}-\\d+$`),
     title: new RegExp(`${prefix}-\\d+`),
   };
