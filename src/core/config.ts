@@ -50,6 +50,7 @@ export function loadAppConfig(forceReload: boolean = false): AppConfig {
     configCache = config;
     return config;
   } catch (error) {
+    console.error(error);
     throw new ConfigurationError('Failed to load application configuration', {
       originalError: error,
     });
@@ -184,10 +185,10 @@ ${getClaudeSetupInstructions()}
    # GitHub CLI (required)
    brew install gh
    gh auth login
-   
+
    # Jira CLI (optional)
    npm install -g jira-cli
-   
+
    # Claude CLI (optional)
    npm install -g @anthropic-ai/claude-code
 

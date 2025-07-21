@@ -32,7 +32,7 @@ let mockResponses: Record<string, unknown> | null = null;
 let cliResponses: Record<string, string> | null = null;
 let errorResponses: Record<string, string> | null = null;
 let commandPatterns: Record<string, RegExp> | null = null;
-let getMockResponse: ((command: string) => string | null) | null = null;
+let getMockResponse: ((_command: string) => string | null) | null = null;
 
 try {
   const mockModule = require('./mock-responses');
@@ -47,7 +47,7 @@ try {
     commandPatterns,
     getMockResponse,
   };
-} catch (err) {
+} catch (_err) {
   // Mock responses not available in production build
 }
 

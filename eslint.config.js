@@ -102,6 +102,15 @@ export default [
     },
   },
 
+  // Type and enum files - allow unused exports for completeness
+  {
+    files: ['**/types.ts', '**/errors.ts', '**/operations.ts', '**/mock-responses.ts', '**/index.ts', '**/test-utils.ts', '**/pr-utils.ts', '**/mocks/**/*.ts'],
+    rules: {
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+    },
+  },
+
   // Prettier configuration (must be last to override other configs)
   prettier,
 ];
