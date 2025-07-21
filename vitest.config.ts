@@ -11,7 +11,7 @@ export default defineConfig({
       'node_modules',
       'dist',
       'temp',
-      'src/tests/e2e-real.test.ts' // Exclude real E2E tests from regular runs
+      'src/tests/e2e.test.ts' // Exclude real E2E tests from regular runs
     ],
 
     // Environment setup
@@ -57,7 +57,7 @@ export default defineConfig({
 
     // Timeout configuration - increased for complex integration tests
     testTimeout: 30000,
-    
+
     // Allow tests to run in sequence to avoid conflicts
     pool: 'threads',
     poolOptions: {

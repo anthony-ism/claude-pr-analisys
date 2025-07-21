@@ -6,7 +6,7 @@ This project includes **real end-to-end tests** that validate the application's 
 
 ## Test Structure
 
-### Test File: `src/tests/e2e-real.test.ts`
+### Test File: `src/tests/e2e.test.ts`
 - **14 comprehensive test scenarios**
 - **Real API calls** to GitHub
 - **Actual CLI tool integration**
@@ -59,7 +59,7 @@ gh repo view anthony-ism/claude-pr-analisys  # Must have read access
 ### Execution Commands
 ```bash
 # Run real E2E tests (manual execution recommended)
-npm run test:e2e-real
+npm run test:e2e
 
 # Run regular mock-based tests (excludes real E2E)
 npm test
@@ -139,11 +139,11 @@ Real E2E tests should be run manually or in dedicated CI environments:
 
 ```bash
 # Local development - manual validation
-npm run test:e2e-real
+npm run test:e2e
 
 # CI/CD - separate job with real credentials
 - name: Real E2E Tests
-  run: npm run test:e2e-real
+  run: npm run test:e2e
   env:
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
@@ -184,10 +184,10 @@ gh repo view anthony-ism/claude-pr-analisys
 ### Debugging
 ```bash
 # Verbose output
-npm run test:e2e-real -- --reporter=verbose
+npm run test:e2e -- --reporter=verbose
 
 # Single test debugging
-npx vitest run src/tests/e2e-real.test.ts -t "GitHub CLI is available"
+npx vitest run src/tests/e2e.test.ts -t "GitHub CLI is available"
 ```
 
 ## Value Proposition
