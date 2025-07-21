@@ -37,35 +37,51 @@ export {
   resetDependencies as resetClaudeDependencies,
 } from './operations';
 
-// Mock responses (legacy support)
-const {
-  claudeCLIResponses,
-  claudeErrorResponses,
-  claudeCommandPatterns,
-  getClaudeMockResponse,
-  generateMockAnalysis,
-  getClaudeTestPrompts,
-  getClaudeResponseScenarios,
-  isValidClaudeCommand,
-} = require('./mock-responses');
+// Mock responses (optional - only available in development builds)
+let mockResponses: Record<string, unknown> | null = null;
+let cliResponses: Record<string, string> | null = null;
+let errorResponses: Record<string, string> | null = null;
+let commandPatterns: Record<string, RegExp> | null = null;
+let getMockResponse: ((command: string) => string | null) | null = null;
+let generateAnalysis: ((prData: unknown, jiraData: unknown) => string) | null =
+  null;
+let getTestPrompts: (() => string[]) | null = null;
+let getResponseScenarios: (() => Record<string, string>) | null = null;
+let isValidCommand: ((command: string) => boolean) | null = null;
 
-export const mockResponses = {
-  cliResponses: claudeCLIResponses,
-  errorResponses: claudeErrorResponses,
-  commandPatterns: claudeCommandPatterns,
-  getMockResponse: getClaudeMockResponse,
-  generateAnalysis: generateMockAnalysis,
-  getTestPrompts: getClaudeTestPrompts,
-  getResponseScenarios: getClaudeResponseScenarios,
-  isValidCommand: isValidClaudeCommand,
+try {
+  const mockModule = require('./mock-responses');
+  cliResponses = mockModule.claudeCLIResponses;
+  errorResponses = mockModule.claudeErrorResponses;
+  commandPatterns = mockModule.claudeCommandPatterns;
+  getMockResponse = mockModule.getClaudeMockResponse;
+  generateAnalysis = mockModule.generateMockAnalysis;
+  getTestPrompts = mockModule.getClaudeTestPrompts;
+  getResponseScenarios = mockModule.getClaudeResponseScenarios;
+  isValidCommand = mockModule.isValidClaudeCommand;
+
+  mockResponses = {
+    cliResponses,
+    errorResponses,
+    commandPatterns,
+    getMockResponse,
+    generateAnalysis,
+    getTestPrompts,
+    getResponseScenarios,
+    isValidCommand,
+  };
+} catch (err) {
+  // Mock responses not available in production build
+}
+
+export {
+  mockResponses,
+  cliResponses,
+  errorResponses,
+  commandPatterns,
+  getMockResponse,
+  generateAnalysis,
+  getTestPrompts,
+  getResponseScenarios,
+  isValidCommand,
 };
-
-// Legacy exports for backward compatibility
-export const cliResponses = claudeCLIResponses;
-export const errorResponses = claudeErrorResponses;
-export const commandPatterns = claudeCommandPatterns;
-export const getMockResponse = getClaudeMockResponse;
-export const generateAnalysis = generateMockAnalysis;
-export const getTestPrompts = getClaudeTestPrompts;
-export const getResponseScenarios = getClaudeResponseScenarios;
-export const isValidCommand = isValidClaudeCommand;

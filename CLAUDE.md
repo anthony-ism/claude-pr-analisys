@@ -24,6 +24,9 @@ node dist/tests/analyze-pr.test.js      # Refactored analyze-pr tests (8 tests)
 node dist/tests/comment-pr.test.js      # Comment-pr script tests (15 tests)
 node dist/tests/pr-utils.test.js        # Shared utilities tests (20 tests)
 
+# E2E Integration Testing (validates complete workflow)
+node src/tests/e2e-final.test.js        # Complete E2E workflow validation (6 tests)
+
 # All tests use shared mock system and environment-aware data
 ```
 
@@ -243,6 +246,51 @@ When working on complex multi-step tasks in this project, Claude should create a
 - Only have ONE todo in_progress at any time
 - Include specific file changes and context in each update
 - NEVER mark as completed if tests fail, build fails, or lint errors exist
+
+## E2E Testing & Production Readiness
+
+### E2E Test Framework
+The project includes comprehensive end-to-end testing to validate the complete workflow:
+
+**E2E Test Suite Location:** `src/tests/e2e-final.test.js`
+
+**Coverage:**
+1. **Environment Configuration** - Validates proper environment variable loading
+2. **PR Number Validation** - Tests all PR number validation scenarios  
+3. **Jira Ticket Pattern Matching** - Validates ticket extraction from PR titles
+4. **File System Workflow Operations** - Tests temp directory and file operations
+5. **Code Coverage E2E Workflow Scenario** - Complete scenario validation
+6. **Application Build Readiness** - Validates all required build files exist
+
+**Running E2E Tests:**
+```bash
+npm run build  # Required first
+node src/tests/e2e-final.test.js
+```
+
+### Production Readiness Checklist
+- ✅ All unit tests pass (56+ tests)
+- ✅ All E2E tests pass (6 scenarios)
+- ✅ Zero ESLint errors/warnings
+- ✅ TypeScript strict compilation
+- ✅ All required build files present
+- ✅ Core workflow validated
+- ✅ Code coverage scenario implemented
+
+### Code Coverage Feature Implementation
+The E2E tests validate a complete code coverage implementation scenario:
+
+**Scenario:** PR title "COV-456: Add code coverage reporting to unit tests"
+**Workflow:** analyze-pr.js → Claude analysis → comment-pr.js
+**Validation:** Jira ticket extraction, pattern matching, file operations
+
+**Implementation Steps:**
+1. Create Jira ticket with COV- prefix  
+2. Create PR with pattern: "COV-XXX: Add code coverage reporting to unit tests"
+3. Implement Jest coverage configuration
+4. Add coverage thresholds (minimum 80%)
+5. Update CI/CD pipeline for coverage reports
+6. Document coverage workflow
 
 ### Session Template for Complex Tasks
 
