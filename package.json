@@ -16,35 +16,20 @@
     "node": ">=16.0.0"
   },
   "scripts": {
-    "build": "rm -rf dist && tsc",
+    "build": "tsc",
     "build:watch": "tsc --watch",
     "clean": "rm -rf dist temp",
-    "start": "npm run build && node dist/analyze-pr.js",
-    "start:comment": "npm run build && node dist/comment-pr.js", 
-    "test": "npm run build && JIRA_TICKET_PREFIX=TEST GITHUB_REPOSITORY=test-org/test-repo node dist/tests/analyze-pr.test.js && JIRA_TICKET_PREFIX=TEST GITHUB_REPOSITORY=test-org/test-repo node dist/tests/comment-pr.test.js && JIRA_TICKET_PREFIX=TEST GITHUB_REPOSITORY=test-org/test-repo node dist/tests/pr-utils.test.js",
-    "test:dist": "npm run build && JIRA_TICKET_PREFIX=TEST GITHUB_REPOSITORY=test-org/test-repo JIRA_API_TOKEN=test JIRA_SERVER_URL=https://test.atlassian.net JIRA_USER_EMAIL=test@test.com node dist/tests/analyze-pr.test.js && JIRA_TICKET_PREFIX=TEST GITHUB_REPOSITORY=test-org/test-repo JIRA_API_TOKEN=test JIRA_SERVER_URL=https://test.atlassian.net JIRA_USER_EMAIL=test@test.com node dist/tests/comment-pr.test.js && JIRA_TICKET_PREFIX=TEST GITHUB_REPOSITORY=test-org/test-repo JIRA_API_TOKEN=test JIRA_SERVER_URL=https://test.atlassian.net JIRA_USER_EMAIL=test@test.com node dist/tests/pr-utils.test.js",
-    "test:watch": "npm run build:watch & npm run test",
-    "test:compiled": "npm run build && echo 'Testing compiled analyze-pr...' && JIRA_TICKET_PREFIX=TEST GITHUB_REPOSITORY=test-org/test-repo node dist/analyze-pr.js || echo '✅ analyze-pr usage shown' && echo 'Testing compiled comment-pr...' && JIRA_TICKET_PREFIX=TEST GITHUB_REPOSITORY=test-org/test-repo node dist/comment-pr.js || echo '✅ comment-pr usage shown'",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
     "lint": "eslint \"src/**/*.{ts,js}\" --ext .ts,.js",
     "lint:fix": "eslint \"src/**/*.{ts,js}\" --ext .ts,.js --fix",
     "lint:ci": "eslint \"src/**/*.{ts,js}\" --ext .ts,.js --format=compact",
     "format": "prettier --write \"src/**/*.{ts,js,json}\"",
     "format:check": "prettier --check \"src/**/*.{ts,js,json}\"",
-    "format:ci": "prettier --check \"src/**/*.{ts,js,json}\"",
-    "quality": "npm run lint && npm run format:check && npm run typecheck",
-    "quality:fix": "npm run lint:fix && npm run format",
-    "pretest": "npm run quality",
-    "prebuild": "npm run quality",
-    "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run build",
-    "dev": "ts-node src/analyze-pr.ts",
-    "version:patch": "npm version patch",
-    "version:minor": "npm version minor", 
-    "version:major": "npm version major",
-    "check-all": "npm run quality && npm run test && npm run build",
-    "ci:quality": "npm run lint:ci && npm run format:ci && npm run typecheck",
-    "ci:test": "npm run build && npm run test",
-    "ci:build": "npm run clean && npm run build"
+    "prebuild": "npm run clean",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [
     "github",
@@ -61,11 +46,14 @@
     "@types/node": "^20.0.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
+    "@vitest/coverage-v8": "^1.0.0",
+    "@vitest/ui": "^1.0.0",
     "eslint": "^8.0.0",
     "eslint-config-prettier": "^9.0.0",
     "prettier": "^3.0.0",
     "ts-node": "^10.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
   },
   "optionalDependencies": {}
 }

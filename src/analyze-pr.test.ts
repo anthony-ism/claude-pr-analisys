@@ -1,19 +1,15 @@
 /**
  * analyze-pr.test.ts - Unit tests for PR Analysis Script
  * Author: Anthony Rizzo, Co-pilot: Claude
- * Description: Lightweight unit tests to validate function chaining and parameter passing
+ * Description: Lightweight unit tests to validate function chaining and parameter passing using Vitest
  */
 
-// Import shared test utilities and mock data
+import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import {
-  TestRunner,
   MockExecutor,
-  setupTestEnvironment,
-  cleanupTestEnvironment,
-  assert,
-  assertContains,
-  assertCommandCalled,
-  MockResponse,
+  MockReadline,
+  createTestDependencies,
+  setupEnhancedMocks,
 } from './utils/test-utils';
 
 import {
@@ -21,10 +17,12 @@ import {
   getMockPRData,
   getMockJiraData,
   cliResponses,
-  testScenarios,
-  GitHubPRData,
-  MockJiraData,
 } from './testing/mocks';
+
+import { GitHubPRData } from './services/github/operations';
+
+// Import modules directly from TypeScript source
+import * as prUtils from './utils/pr-utils';
 
 // Type definitions for test functions
 interface PRData {
@@ -42,9 +40,6 @@ interface PRData {
   };
 }
 
-// Setup test environment
-setupTestEnvironment();
-
 // Get test data from shared mock system
 const mockPRData = getMockPRData() as GitHubPRData;
 const mockJiraData = getMockJiraData() as string;
@@ -53,6 +48,7 @@ const mockClaudeResponse = cliResponses.claude.responses.analyze().stdout;
 
 // Use shared MockExecutor for consistent command mocking
 const mockExecutor = new MockExecutor();
+const mockReadline = new MockReadline();
 
 // Setup mock responses using shared CLI responses
 function setupMockResponses(): void {
@@ -86,14 +82,8 @@ function setupMockResponses(): void {
 }
 
 // Mock execAsync function using shared executor
-async function mockExecAsync(command: string): Promise<MockResponse> {
+async function mockExecAsync(command: string): Promise<{stdout: string; stderr?: string}> {
   return mockExecutor.execute(command);
-}
-
-// Helper functions for command assertion using shared executor
-function assertCommandCalledLocal(command: string, message?: string): void {
-  const calls = mockExecutor.getCalls();
-  assertCommandCalled(calls, command, message);
 }
 
 // Simple functions to test (extracted from main script)
@@ -197,7 +187,7 @@ IMPORTANT: End your analysis with the following attribution:
 *This analysis was generated using AI with the Claude CLI and ${claudeModel}*`;
 }
 
-async function callClaude(prompt: string): Promise<string> {
+async function callClaude(_prompt: string): Promise<string> {
   try {
     const claudeResult = await mockExecAsync(`claude "temp-file"`);
     return claudeResult.stdout;
@@ -208,7 +198,7 @@ async function callClaude(prompt: string): Promise<string> {
 
 async function postAnalysisComment(
   prNumber: string,
-  analysisContent: string
+  _analysisContent: string
 ): Promise<boolean> {
   try {
     await mockExecAsync(`gh pr comment ${prNumber} --body-file "temp-file"`);
@@ -230,242 +220,142 @@ async function checkRequiredTools(): Promise<void> {
   }
 }
 
-// Create test instance using shared TestRunner
-const testRunner = new TestRunner('PR Analysis Script Tests');
+describe('PR Analysis Script Tests', () => {
+  beforeEach(() => {
+    setupMockResponses();
+  });
 
-// Setup mock responses before each test
-testRunner.test('Setup', async (): Promise<void> => {
-  setupMockResponses();
-});
-
-// Test 1: Extract Jira ticket from PR title
-testRunner.test(
-  'Extract Jira ticket from PR title',
-  async (): Promise<void> => {
+  test('Extract Jira ticket from PR title', async () => {
     const ticket = extractJiraTicket(
       `${testTicketId}: Visit Accepted Date is not displayed`
     );
-    assert(ticket === testTicketId, `Expected ${testTicketId}, got ${ticket}`);
+    expect(ticket).toBe(testTicketId);
 
     const noTicket = extractJiraTicket('Fix bug without ticket');
-    assert(noTicket === null, `Expected null for no ticket, got ${noTicket}`);
-  }
-);
+    expect(noTicket).toBeNull();
+  });
 
-// Test 2: Validate PR function calls correct commands
-testRunner.test(
-  'Validate PR calls correct GitHub commands',
-  async (): Promise<void> => {
+  test('Validate PR calls correct GitHub commands', async () => {
     const result = await validatePR('392');
-    assert(result === true, 'Expected validatePR to return true');
-    assertCommandCalledLocal('gh pr view 392', 'Expected gh pr view command');
-  }
-);
+    expect(result).toBe(true);
+    
+    const calls = mockExecutor.getCalls();
+    expect(calls.some(call => call.includes('gh pr view 392'))).toBe(true);
+  });
 
-// Test 3: Gather PR data calls multiple GitHub commands
-testRunner.test(
-  'Gather PR data calls multiple GitHub commands',
-  async (): Promise<void> => {
+  test('Gather PR data calls multiple GitHub commands', async () => {
     const prData = await gatherPRData('392');
-    assert(prData !== null, 'Expected PR data to be returned');
-    assert(
-      prData!.json.title.includes(testTicketId),
-      `Expected title to contain ${testTicketId}`
-    );
+    expect(prData).not.toBeNull();
+    expect(prData!.json.title).toContain(testTicketId);
 
-    assertCommandCalledLocal(
-      'gh pr view 392',
-      'Expected basic PR view command'
-    );
-    assertCommandCalledLocal('gh pr diff 392', 'Expected PR diff command');
-    assertCommandCalledLocal(
-      '--json title,author,state,additions,deletions,url',
-      'Expected JSON PR view command'
-    );
-  }
-);
+    const calls = mockExecutor.getCalls();
+    expect(calls.some(call => call.includes('gh pr view 392'))).toBe(true);
+    expect(calls.some(call => call.includes('gh pr diff 392'))).toBe(true);
+    expect(calls.some(call => call.includes('--json title,author,state,additions,deletions,url'))).toBe(true);
+  });
 
-// Test 4: Validate Jira ticket function
-testRunner.test(
-  'Validate Jira ticket calls correct commands',
-  async (): Promise<void> => {
+  test('Validate Jira ticket calls correct commands', async () => {
     const result = await validateJiraTicket(testTicketId);
-    assert(result === true, 'Expected validateJiraTicket to return true');
-    assertCommandCalledLocal(
-      `jira issue view ${testTicketId}`,
-      'Expected jira issue view command'
-    );
-  }
-);
+    expect(result).toBe(true);
+    
+    const calls = mockExecutor.getCalls();
+    expect(calls.some(call => call.includes(`jira issue view ${testTicketId}`))).toBe(true);
+  });
 
-// Test 5: Create Claude prompt includes all required data
-testRunner.test(
-  'Create Claude prompt includes all required data',
-  async (): Promise<void> => {
+  test('Create Claude prompt includes all required data', async () => {
     const prompt = await createClaudePrompt(
       '392',
       testTicketId,
       mockPRData,
       mockJiraData
     );
-    assert(
-      prompt.includes(testTicketId),
-      'Expected prompt to contain ticket ID'
-    );
-    assert(
-      prompt.includes('Pull Request #392'),
-      'Expected prompt to contain PR number'
-    );
-    assert(
-      prompt.includes('stopFormValidation'),
-      'Expected prompt to contain diff content'
-    );
-    assert(
-      prompt.includes('Ready to Read'),
-      'Expected prompt to contain Jira content'
-    );
-    assert(
-      prompt.includes('This analysis was generated using AI'),
-      'Expected prompt to contain attribution'
-    );
-  }
-);
+    expect(prompt).toContain(testTicketId);
+    expect(prompt).toContain('Pull Request #392');
+    expect(prompt).toContain('stopFormValidation');
+    expect(prompt).toContain('Ready to Read');
+    expect(prompt).toContain('This analysis was generated using AI');
+  });
 
-// Test 6: Call Claude function
-testRunner.test(
-  'Call Claude creates temp file and calls CLI',
-  async (): Promise<void> => {
+  test('Call Claude creates temp file and calls CLI', async () => {
     const prompt = 'Test prompt for Claude';
     const response = await callClaude(prompt);
 
-    assert(
-      response.includes(testTicketId),
-      `Expected Claude response to contain ticket ID ${testTicketId}`
-    );
-    assertCommandCalledLocal('claude ', 'Expected claude command to be called');
-  }
-);
+    expect(response).toContain(testTicketId);
+    
+    const calls = mockExecutor.getCalls();
+    expect(calls.some(call => call.includes('claude'))).toBe(true);
+  });
 
-// Test 7: Post analysis comment
-testRunner.test(
-  'Post analysis comment calls GitHub CLI',
-  async (): Promise<void> => {
+  test('Post analysis comment calls GitHub CLI', async () => {
     const analysis = 'Test analysis content';
     const result = await postAnalysisComment('392', analysis);
 
-    assert(result === true, 'Expected postAnalysisComment to return true');
-    assertCommandCalledLocal(
-      'gh pr comment 392',
-      'Expected gh pr comment command'
-    );
-  }
-);
+    expect(result).toBe(true);
+    
+    const calls = mockExecutor.getCalls();
+    expect(calls.some(call => call.includes('gh pr comment 392'))).toBe(true);
+  });
 
-// Test 8: Check required tools validates all dependencies
-testRunner.test(
-  'Check required tools validates all dependencies',
-  async (): Promise<void> => {
+  test('Check required tools validates all dependencies', async () => {
     await checkRequiredTools();
 
-    assertCommandCalledLocal('which gh', 'Expected to check for gh CLI');
-    assertCommandCalledLocal('which jira', 'Expected to check for jira CLI');
-    assertCommandCalledLocal(
-      'which claude',
-      'Expected to check for claude CLI'
+    const calls = mockExecutor.getCalls();
+    expect(calls.some(call => call.includes('which gh'))).toBe(true);
+    expect(calls.some(call => call.includes('which jira'))).toBe(true);
+    expect(calls.some(call => call.includes('which claude'))).toBe(true);
+  });
+
+  test('Error handling for missing tools', async () => {
+    // Clear all mocks and set specific error for claude
+    mockExecutor.clearCalls();
+    mockExecutor.clearResponses();
+
+    // Set specific responses for the tools we need
+    mockExecutor.setRegexResponse(/^which gh$/, { stdout: '/usr/bin/gh' });
+    mockExecutor.setRegexResponse(/^which jira$/, { stdout: '/usr/bin/jira' });
+    mockExecutor.setRegexResponse(
+      /^which claude$/,
+      new Error('Command not found')
     );
-  }
-);
 
-// Test 9: Error handling for missing tools
-testRunner.test('Error handling for missing tools', async (): Promise<void> => {
-  // Clear all mocks and set specific error for claude
-  mockExecutor.clearCalls();
-  mockExecutor.clearResponses();
+    await expect(checkRequiredTools()).rejects.toThrow('claude is not installed or not in PATH');
 
-  // Set specific responses for the tools we need
-  mockExecutor.setRegexResponse(/^which gh$/, { stdout: '/usr/bin/gh' });
-  mockExecutor.setRegexResponse(/^which jira$/, { stdout: '/usr/bin/jira' });
-  mockExecutor.setRegexResponse(
-    /^which claude$/,
-    new Error('Command not found')
-  );
+    // Reset mock for other tests
+    setupMockResponses();
+  });
 
-  try {
-    await checkRequiredTools();
-    assert(false, 'Expected checkRequiredTools to throw error');
-  } catch (error) {
-    assert(
-      error instanceof Error && error.message.includes('claude'),
-      'Expected error message to mention claude'
-    );
-  }
+  test('Error handling for invalid PR', async () => {
+    // Clear all mocks and set specific error for PR 999
+    mockExecutor.clearCalls();
+    mockExecutor.clearResponses();
 
-  // Reset mock for other tests
-  setupMockResponses();
+    // Set specific error for PR 999 first (more specific pattern)
+    mockExecutor.setRegexResponse(/^gh pr view 999$/, new Error('PR not found'));
+    mockExecutor.setRegexResponse(/^gh pr view \d+$/, {
+      stdout: mockPRData.view,
+    }); // For other PRs
+
+    const result = await validatePR('999');
+    expect(result).toBe(false);
+
+    // Reset mock for other tests
+    setupMockResponses();
+  });
+
+  test('Command tracking works correctly', async () => {
+    await validatePR('123');
+    await gatherPRData('123');
+
+    // Should have multiple calls tracked
+    const calls = mockExecutor.getCalls();
+    expect(calls.length).toBeGreaterThanOrEqual(3);
+    expect(calls.some(call => call.includes('gh pr view 123'))).toBe(true);
+    expect(calls.some(call => call.includes('gh pr diff 123'))).toBe(true);
+  });
+
+  test('Detect Claude model function', async () => {
+    const model = await detectClaudeModel();
+    expect(typeof model).toBe('string');
+    expect(model).toContain('Claude');
+  });
 });
-
-// Test 10: Error handling for invalid PR
-testRunner.test('Error handling for invalid PR', async (): Promise<void> => {
-  // Clear all mocks and set specific error for PR 999
-  mockExecutor.clearCalls();
-  mockExecutor.clearResponses();
-
-  // Set specific error for PR 999 first (more specific pattern)
-  mockExecutor.setRegexResponse(/^gh pr view 999$/, new Error('PR not found'));
-  mockExecutor.setRegexResponse(/^gh pr view \d+$/, {
-    stdout: mockPRData.view,
-  }); // For other PRs
-
-  const result = await validatePR('999');
-  assert(
-    result === false,
-    'Expected validatePR to return false for invalid PR'
-  );
-
-  // Reset mock for other tests
-  setupMockResponses();
-});
-
-// Test 11: Command tracking works correctly
-testRunner.test('Command tracking works correctly', async (): Promise<void> => {
-  await validatePR('123');
-  await gatherPRData('123');
-
-  // Should have multiple calls tracked
-  const calls = mockExecutor.getCalls();
-  assert(calls.length >= 3, `Expected at least 3 calls, got ${calls.length}`);
-  assertCommandCalledLocal('gh pr view 123', 'Expected PR view call');
-  assertCommandCalledLocal('gh pr diff 123', 'Expected PR diff call');
-});
-
-// Test 12: Detect Claude model function
-testRunner.test('Detect Claude model function', async (): Promise<void> => {
-  const model = await detectClaudeModel();
-  assert(typeof model === 'string', 'Expected model to be a string');
-  assert(model.includes('Claude'), 'Expected model string to contain Claude');
-});
-
-// Run all tests
-async function runTests(): Promise<void> {
-  const success = await testRunner.run();
-  process.exit(success ? 0 : 1);
-}
-
-// Cleanup after tests
-process.on('exit', () => {
-  cleanupTestEnvironment();
-});
-
-// Export for external use or run directly
-if (require.main === module) {
-  void runTests();
-} else {
-  module.exports = {
-    testRunner,
-    mockExecAsync,
-    mockPRData,
-    mockJiraData,
-    mockClaudeResponse,
-    setupMockResponses,
-  };
-}

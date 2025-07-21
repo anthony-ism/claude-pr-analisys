@@ -17,8 +17,8 @@ export interface MockPRData {
   deletions: number;
 }
 
-// Alias for GitHubPRData (used by test files)
-export interface GitHubPRData extends MockPRData {}
+// Note: GitHubPRData interface is defined in src/services/github/operations.ts
+// Import it directly from there instead of using this mock alias
 
 export interface MockJiraData {
   key: string;
@@ -68,13 +68,13 @@ export interface CLIOperationScenario {
 }
 
 // Shared test utilities
-const {
+import {
   getTestTicketId,
   validateTestEnvironment,
   setupTestEnvironment,
   cleanupTestEnvironment,
   getTestTicketPatterns,
-} = require('../utils/test-helpers');
+} from '../utils/test-helpers';
 
 // Service mock data
 const { getMockPRData, mockGitHubResponses } = require('./github-data');

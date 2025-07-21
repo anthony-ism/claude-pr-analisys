@@ -8,12 +8,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 // Import shared test utilities and mock data
-const testHelpers = require('../testing/utils/test-helpers');
+import * as testHelpers from '../testing/utils/test-helpers';
+import { mockData, cliResponses, testScenarios } from '../testing/mocks';
+
 const { getTestTicketId, validateTestEnvironment } = testHelpers;
 const sharedSetupEnvironment = testHelpers.setupTestEnvironment;
 const sharedCleanupEnvironment = testHelpers.cleanupTestEnvironment;
-
-const { mockData, cliResponses, testScenarios } = require('../testing/mocks');
 
 // Type definitions
 export interface TestResult {
