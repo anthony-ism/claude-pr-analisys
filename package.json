@@ -46,7 +46,7 @@
   "author": "Anthony Rizzo",
   "license": "ISC",
   "devDependencies": {
-    "@types/node": "^20.0.0",
+    "@types/node": "^20.19.9",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
     "@vitest/coverage-v8": "^1.0.0",
@@ -58,5 +58,7 @@
     "typescript": "^5.0.0",
     "vitest": "^1.0.0"
   },
-  "optionalDependencies": {}
+  "dependencies": {
+    "dotenv": "^17.2.0"
+  }
 }

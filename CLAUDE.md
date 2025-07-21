@@ -10,9 +10,7 @@ PR analysis automation tool that integrates GitHub pull requests with Jira ticke
 
 **Testing:**
 ```bash
-# Set test environment
-export JIRA_TICKET_PREFIX=TEST
-export GITHUB_REPOSITORY=test-org/test-repo
+# Environment automatically loaded from .env file
 
 # Run all tests
 npm test
@@ -53,15 +51,29 @@ npm run typecheck      # Run TypeScript type checking
 
 ## Environment Variables
 
-**Required:**
+**Quick Start:**
 ```bash
-export JIRA_TICKET_PREFIX=RIZDEV              # Your Jira project prefix
-export GITHUB_REPOSITORY=owner/repository     # GitHub repository format
+# Copy the example file and edit with your values
+cp .env.example .env
 ```
 
-**Optional:**
+**Required (via .env file or export):**
 ```bash
-export JIRA_TICKET_PATTERN="CUSTOM-\d+"       # Override default ticket pattern
+GITHUB_REPOSITORY=owner/repository            # GitHub repository format
+JIRA_TICKET_PREFIX=PROJ                       # Your Jira project prefix
+```
+
+**Optional (via .env file or export):**
+```bash
+NODE_ENV=development                          # development|testing|production  
+DEBUG=true                                    # Enable debug logging
+JIRA_USER_EMAIL=user@company.com              # Jira user email
+JIRA_SERVER_URL=https://company.atlassian.net/ # Jira server URL
+JIRA_TICKET_PATTERN="CUSTOM-\d+"              # Override default ticket pattern
+CLAUDE_MODEL=claude-3-sonnet-20240229         # Claude model
+TEMP_DIR=./temp                               # Temporary file directory
+MAX_RETRIES=3                                 # Maximum retry attempts
+TIMEOUT=30000                                 # Timeout in milliseconds
 ```
 
 ## Quality Gates

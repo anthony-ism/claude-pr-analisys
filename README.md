@@ -11,8 +11,12 @@ A TypeScript CLI tool that integrates GitHub pull requests with Jira tickets usi
 
 ### Environment Setup
 ```bash
-export JIRA_TICKET_PREFIX=YOUR_PROJECT    # e.g., RIZDEV, TEST, PROJECT
-export GITHUB_REPOSITORY=owner/repo       # e.g., myorg/myproject
+# Copy the example environment file
+cp .env.example .env
+
+# Edit .env with your actual values
+# Required: JIRA_TICKET_PREFIX=YOUR_PROJECT (e.g., RIZDEV, TEST, PROJECT)  
+# Required: GITHUB_REPOSITORY=owner/repo (e.g., myorg/myproject)
 ```
 
 ### Installation & Usage
@@ -47,9 +51,7 @@ npm run format         # Format code with Prettier
 
 ### Testing
 ```bash
-# Set test environment
-export JIRA_TICKET_PREFIX=TEST
-export GITHUB_REPOSITORY=test-org/test-repo
+# Environment automatically loaded from .env file
 
 # Run test suites
 npm test                # All tests (recommended)
