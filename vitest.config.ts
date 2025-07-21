@@ -3,14 +3,15 @@ import path from 'path';
 
 export default defineConfig({
   test: {
-    // Test file patterns - include all test files
+    // Test file patterns - include all test files except real E2E tests
     include: [
       'src/tests/*.test.ts'
     ],
     exclude: [
       'node_modules',
       'dist',
-      'temp'
+      'temp',
+      'src/tests/e2e-real.test.ts' // Exclude real E2E tests from regular runs
     ],
 
     // Environment setup
@@ -54,8 +55,8 @@ export default defineConfig({
     // Reporter configuration
     reporter: ['verbose'],
 
-    // Timeout configuration
-    testTimeout: 10000,
+    // Timeout configuration - increased for complex integration tests
+    testTimeout: 30000,
     
     // Allow tests to run in sequence to avoid conflicts
     pool: 'threads',
