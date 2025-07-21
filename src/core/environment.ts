@@ -3,8 +3,12 @@
  * Author: Anthony Rizzo, Co-pilot: Claude
  */
 
+import { config } from 'dotenv';
 import { Environment, ValidationResult } from './types';
 import { ConfigurationError } from './errors';
+
+// Load environment variables from .env file
+config();
 
 // Required environment variables
 export const REQUIRED_ENV_VARS = {
@@ -21,6 +25,8 @@ export const OPTIONAL_ENV_VARS = {
   TEMP_DIR: 'TEMP_DIR',
   MAX_RETRIES: 'MAX_RETRIES',
   TIMEOUT: 'TIMEOUT',
+  JIRA_USER_EMAIL: 'JIRA_USER_EMAIL',
+  JIRA_SERVER_URL: 'JIRA_SERVER_URL',
 } as const;
 
 // Environment configuration interface
@@ -39,6 +45,8 @@ export interface EnvironmentConfig {
   // Service-specific (optional)
   claudeModel?: string;
   claudeCliPath?: string;
+  jiraUserEmail?: string;
+  jiraServerUrl?: string;
 }
 
 /**
@@ -73,6 +81,8 @@ export function loadEnvironmentConfig(): EnvironmentConfig {
     ...(process.env.CLAUDE_CLI_PATH && {
       claudeCliPath: process.env.CLAUDE_CLI_PATH,
     }),
+    ...(process.env.JIRA_USER_EMAIL && { jiraUserEmail: process.env.JIRA_USER_EMAIL }),
+    ...(process.env.JIRA_SERVER_URL && { jiraServerUrl: process.env.JIRA_SERVER_URL }),
   };
 }
 
@@ -166,6 +176,11 @@ export function getDebugMode(): boolean {
 export function getEnvironmentSetupInstructions(): string {
   return `🔧 Environment Setup:
 
+Quick Start - Copy the example file:
+cp .env.example .env
+
+Then edit .env with your actual values.
+
 Required:
 export GITHUB_REPOSITORY="owner/repo"        # GitHub repository in owner/repo format
 export JIRA_TICKET_PREFIX="PROJ"             # Jira project prefix (e.g., PROJ, DEV)
@@ -180,6 +195,8 @@ export TIMEOUT="30000"                       # Timeout in milliseconds
 Service-specific (optional):
 export CLAUDE_MODEL="claude-3-sonnet-20240229"  # Claude model
 export CLAUDE_CLI_PATH="/custom/path/claude"    # Custom Claude CLI path
+export JIRA_USER_EMAIL="user@company.com"       # Jira user email
+export JIRA_SERVER_URL="https://company.atlassian.net/"  # Jira server URL
 
 Example:
 export GITHUB_REPOSITORY="myorg/myproject"
