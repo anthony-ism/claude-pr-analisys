@@ -25,31 +25,40 @@ export enum ErrorSeverity {
   CRITICAL = 'critical',
 }
 
+// Type for error details
+export type ErrorDetails =
+  | Record<string, unknown>
+  | string
+  | number
+  | boolean
+  | null
+  | undefined;
+
 // Base application error
 export class AppError extends Error {
   public readonly type: ErrorType;
   public readonly severity: ErrorSeverity;
-  public readonly details?: any;
+  public readonly details?: ErrorDetails;
   public readonly timestamp: Date;
 
   constructor(
     type: ErrorType,
     message: string,
     severity: ErrorSeverity = ErrorSeverity.MEDIUM,
-    details?: any
+    details?: ErrorDetails
   ) {
     super(message);
     this.name = 'AppError';
     this.type = type;
     this.severity = severity;
-    this.details = details;
+    this.details = details ?? undefined;
     this.timestamp = new Date();
   }
 }
 
 // Configuration error
 export class ConfigurationError extends AppError {
-  constructor(message: string, details?: any) {
+  constructor(message: string, details?: ErrorDetails) {
     super(ErrorType.CONFIGURATION, message, ErrorSeverity.HIGH, details);
     this.name = 'ConfigurationError';
   }
@@ -57,7 +66,7 @@ export class ConfigurationError extends AppError {
 
 // Validation error
 export class ValidationError extends AppError {
-  constructor(message: string, details?: any) {
+  constructor(message: string, details?: ErrorDetails) {
     super(ErrorType.VALIDATION, message, ErrorSeverity.MEDIUM, details);
     this.name = 'ValidationError';
   }
@@ -71,7 +80,7 @@ export class ServiceError extends AppError {
     service: string,
     message: string,
     severity: ErrorSeverity = ErrorSeverity.MEDIUM,
-    details?: any
+    details?: ErrorDetails
   ) {
     super(ErrorType.SERVICE, message, severity, details);
     this.name = 'ServiceError';
@@ -94,26 +103,29 @@ export class AggregateError extends AppError {
   }
 }
 
+// Type for unknown errors that might be passed to utility functions
+export type UnknownError = Error | AppError | string;
+
 // Error utilities
 export class ErrorUtils {
   /**
    * Check if error is a specific type of application error
    */
-  static isAppError(error: any): error is AppError {
+  static isAppError(error: UnknownError): error is AppError {
     return error instanceof AppError;
   }
 
   /**
    * Check if error is a service error
    */
-  static isServiceError(error: any): error is ServiceError {
+  static isServiceError(error: UnknownError): error is ServiceError {
     return error instanceof ServiceError;
   }
 
   /**
    * Extract error message safely from any error type
    */
-  static getErrorMessage(error: any): string {
+  static getErrorMessage(error: UnknownError): string {
     if (error instanceof Error) {
       return error.message;
     }
@@ -126,17 +138,17 @@ export class ErrorUtils {
   /**
    * Extract error details safely
    */
-  static getErrorDetails(error: any): any {
+  static getErrorDetails(error: UnknownError): ErrorDetails | null {
     if (this.isAppError(error)) {
-      return error.details;
+      return error.details ?? null;
     }
-    return error;
+    return null;
   }
 
   /**
    * Format error for logging
    */
-  static formatError(error: any): string {
+  static formatError(error: UnknownError): string {
     if (this.isAppError(error)) {
       const details = error.details
         ? ` | Details: ${JSON.stringify(error.details)}`
@@ -149,12 +161,12 @@ export class ErrorUtils {
   /**
    * Create standardized error response
    */
-  static createErrorResponse(error: any): {
+  static createErrorResponse(error: UnknownError): {
     success: false;
     error: string;
     type: string;
     severity: string;
-    details?: any;
+    details?: ErrorDetails;
   } {
     if (this.isAppError(error)) {
       return {
@@ -162,7 +174,7 @@ export class ErrorUtils {
         error: error.message,
         type: error.type,
         severity: error.severity,
-        details: error.details,
+        ...(error.details !== undefined && { details: error.details }),
       };
     }
 

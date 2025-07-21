@@ -194,6 +194,12 @@ src/services/[service]/
 - **Exception**: Only when the task itself is specifically to fix failing tests
 - **Validation**: Run `npm test` to confirm all tests pass
 
+### **CRITICAL RULE: No Background Processes**
+- **NEVER run commands with `&`** (background execution)
+- **NEVER start watch modes** or long-running processes
+- **ALWAYS run commands synchronously** and wait for completion
+- **Examples of forbidden commands**: `npm run build:watch &`, `nodemon &`, `pm2 start`
+
 ### Standard Validation Workflow
 **Required before any new task or todo completion:**
 1. **Test**: `npm test` - **MUST PASS** (all tests)

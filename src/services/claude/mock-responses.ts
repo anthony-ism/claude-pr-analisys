@@ -10,7 +10,7 @@ const { getTestTicketId } = require('../../testing/utils/test-helpers');
  * @param {string} ticketId - Jira ticket ID for analysis context
  * @returns {string} Mock Claude analysis response
  */
-function generateMockAnalysis(ticketId) {
+function generateMockAnalysis(ticketId?: string): string {
   const ticket = ticketId || getTestTicketId();
   return `## ${ticket} Ticket vs PR Analysis
 
@@ -93,11 +93,11 @@ Examples:
   config: { stdout: 'Configuration updated successfully' },
 
   // Analysis operations
-  analyze: _input => ({
+  analyze: (_input?: string): { stdout: string } => ({
     stdout: generateMockAnalysis(),
   }),
 
-  analyzeFromFile: _filePath => ({
+  analyzeFromFile: (_filePath?: string): { stdout: string } => ({
     stdout: generateMockAnalysis(),
   }),
 
@@ -143,7 +143,9 @@ const claudeCommandPatterns = {
  * @param {string} command - Full command string
  * @returns {Object|null} Mock response or null if no match
  */
-function getClaudeMockResponse(command) {
+function getClaudeMockResponse(
+  command: string
+): { stdout: string; stderr?: string } | null {
   // Version command
   if (claudeCommandPatterns.version.test(command)) {
     return claudeCLIResponses.version;
@@ -191,7 +193,7 @@ function getClaudeMockResponse(command) {
 /**
  * Generate sample analysis prompts for testing
  */
-function getClaudeTestPrompts() {
+function getClaudeTestPrompts(): Record<string, string> {
   const ticketId = getTestTicketId();
   return {
     simple: 'Analyze this code change',
@@ -204,7 +206,7 @@ function getClaudeTestPrompts() {
 /**
  * Generate different analysis response scenarios
  */
-function getClaudeResponseScenarios() {
+function getClaudeResponseScenarios(): Record<string, string> {
   const ticketId = getTestTicketId();
   return {
     positive: generateMockAnalysis(ticketId),
@@ -225,7 +227,7 @@ function getClaudeResponseScenarios() {
  * @param {string} command - Command to validate
  * @returns {boolean} True if command format is valid
  */
-function isValidClaudeCommand(command) {
+function isValidClaudeCommand(command: string): boolean {
   return Object.values(claudeCommandPatterns).some(pattern =>
     pattern.test(command)
   );

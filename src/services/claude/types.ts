@@ -3,6 +3,8 @@
  * Author: Anthony Rizzo, Co-pilot: Claude
  */
 
+import type { ErrorDetails } from '../../core/errors';
+
 // Claude CLI command result
 export interface ClaudeCommandResult {
   stdout: string;
@@ -49,9 +51,9 @@ export enum ClaudeErrorType {
 // Claude service error
 export class ClaudeError extends Error {
   public readonly type: ClaudeErrorType;
-  public readonly details?: any;
+  public readonly details?: ErrorDetails;
 
-  constructor(type: ClaudeErrorType, message: string, details?: any) {
+  constructor(type: ClaudeErrorType, message: string, details?: ErrorDetails) {
     super(message);
     this.name = 'ClaudeError';
     this.type = type;
@@ -102,17 +104,21 @@ export interface ClaudeAnalysisMetadata {
 }
 
 // Type guards
-export function isClaudeError(error: any): error is ClaudeError {
+export function isClaudeError(error: unknown): error is ClaudeError {
   return error instanceof ClaudeError;
 }
 
 export function isClaudeCommandResult(
-  result: any
+  result: unknown
 ): result is ClaudeCommandResult {
   return (
+    result !== null &&
     typeof result === 'object' &&
-    typeof result.stdout === 'string' &&
-    typeof result.stderr === 'string' &&
-    typeof result.exitCode === 'number'
+    'stdout' in result &&
+    'stderr' in result &&
+    'exitCode' in result &&
+    typeof (result as ClaudeCommandResult).stdout === 'string' &&
+    typeof (result as ClaudeCommandResult).stderr === 'string' &&
+    typeof (result as ClaudeCommandResult).exitCode === 'number'
   );
 }

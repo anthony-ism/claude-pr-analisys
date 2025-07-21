@@ -5,6 +5,7 @@
 
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import type { ErrorDetails } from '../../core/errors';
 
 // Default async exec function
 const defaultExecAsync = promisify(exec);
@@ -34,9 +35,9 @@ export enum GitHubErrorType {
 // GitHub service error
 export class GitHubError extends Error {
   public readonly type: GitHubErrorType;
-  public readonly details?: any;
+  public readonly details?: ErrorDetails;
 
-  constructor(type: GitHubErrorType, message: string, details?: any) {
+  constructor(type: GitHubErrorType, message: string, details?: ErrorDetails) {
     super(message);
     this.name = 'GitHubError';
     this.type = type;
@@ -100,9 +101,14 @@ async function executeGitHubCommand(
       stdout: result.stdout,
       stderr: result.stderr,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Handle different types of errors
-    if (error.code === 'ENOENT') {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      error.code === 'ENOENT'
+    ) {
       throw new GitHubError(
         GitHubErrorType.CLI_NOT_FOUND,
         'GitHub CLI (gh) not found. Please install GitHub CLI',
@@ -110,7 +116,12 @@ async function executeGitHubCommand(
       );
     }
 
-    if (error.signal === 'SIGTERM' || error.killed) {
+    if (
+      error &&
+      typeof error === 'object' &&
+      (('signal' in error && error.signal === 'SIGTERM') ||
+        ('killed' in error && error.killed))
+    ) {
       throw new GitHubError(
         GitHubErrorType.NETWORK_ERROR,
         `GitHub CLI command timed out after ${timeout}ms`,
@@ -119,7 +130,13 @@ async function executeGitHubCommand(
     }
 
     // Check stderr for specific error patterns
-    const stderr = error.stderr || '';
+    const stderr =
+      error &&
+      typeof error === 'object' &&
+      'stderr' in error &&
+      typeof error.stderr === 'string'
+        ? error.stderr
+        : '';
     if (stderr.includes('Not Found') || stderr.includes('could not resolve')) {
       if (command.includes('pr view')) {
         throw new GitHubError(
@@ -160,9 +177,16 @@ async function executeGitHubCommand(
     }
 
     // Generic error
+    const message =
+      error &&
+      typeof error === 'object' &&
+      'message' in error &&
+      typeof error.message === 'string'
+        ? error.message
+        : 'Unknown error occurred';
     throw new GitHubError(
       GitHubErrorType.UNKNOWN_ERROR,
-      `GitHub CLI command failed: ${error.message}`,
+      `GitHub CLI command failed: ${message}`,
       { command, originalError: error }
     );
   }
@@ -307,6 +331,6 @@ export async function postPRComment(
 }
 
 // Type guards
-export function isGitHubError(error: any): error is GitHubError {
+export function isGitHubError(error: unknown): error is GitHubError {
   return error instanceof GitHubError;
 }
