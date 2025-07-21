@@ -77,56 +77,52 @@ import {
 } from '../utils/test-helpers';
 
 // Service mock data
-const { getMockPRData, mockGitHubResponses } = require('./github-data');
-
-const {
+import { getMockPRData, mockGitHubResponses } from './github-data';
+import {
   getMockJiraData,
   mockJiraResponses,
   getMockJiraPatterns,
-} = require('./jira-data');
-
-const {
+} from './jira-data';
+import {
   getMockClaudePrompt,
   getMockClaudeResponse,
   mockClaudeResponses,
   getMockPromptVariations,
-} = require('./claude-data');
+} from './claude-data';
 
 // Service CLI mock responses
-const {
+import {
   githubCLIResponses,
   githubErrorResponses,
   getGitHubMockResponse,
-} = require('../../services/github/mock-responses');
-
-const {
+} from '../../services/github/mock-responses';
+import {
   jiraCLIResponses,
   jiraErrorResponses,
   getJiraMockResponse,
-} = require('../../services/jira/mock-responses');
-
-const {
+} from '../../services/jira/mock-responses';
+import {
   claudeCLIResponses,
   claudeErrorResponses,
   getClaudeMockResponse,
-} = require('../../services/claude/mock-responses');
+} from '../../services/claude/mock-responses';
 
 /**
  * Complete mock data sets for testing
  */
 export const mockData = {
   github: {
-    pr: getMockPRData() as MockPRData,
+    pr: getMockPRData(),
     responses: mockGitHubResponses,
   },
   jira: {
-    data: getMockJiraData() as MockJiraData,
+    data: getMockJiraData(),
     responses: mockJiraResponses,
     patterns: getMockJiraPatterns(),
   },
   claude: {
-    prompt: getMockClaudePrompt() as string,
-    response: getMockClaudeResponse() as MockClaudeResponse,
+    prompt: getMockClaudePrompt(),
+    response: getMockClaudeResponse(),
     responses: mockClaudeResponses,
     variations: getMockPromptVariations(),
   },
@@ -158,11 +154,11 @@ export const cliResponses = {
  */
 export const testScenarios = {
   prAnalysisWorkflow: {
-    ticketId: getTestTicketId() as string,
+    ticketId: getTestTicketId(),
     prNumber: 123,
-    githubData: getMockPRData() as MockPRData,
-    jiraData: getMockJiraData() as MockJiraData,
-    claudeAnalysis: getMockClaudeResponse() as MockClaudeResponse,
+    githubData: getMockPRData() as unknown as MockPRData,
+    jiraData: getMockJiraData() as unknown as MockJiraData,
+    claudeAnalysis: getMockClaudeResponse() as unknown as MockClaudeResponse,
   } as TestScenario,
 
   validationErrors: {

@@ -3,7 +3,7 @@
  * Author: Anthony Rizzo, Co-pilot: Claude
  */
 
-const { getTestTicketId } = require('../../testing/utils/test-helpers');
+import { getTestTicketId } from '../../testing/utils/test-helpers';
 
 /**
  * Jira CLI command mock responses
@@ -103,7 +103,7 @@ function getJiraMockResponse(
 ): { stdout: string; stderr?: string } | null {
   // Issue view command
   const issueViewMatch = command.match(jiraCommandPatterns.issueView);
-  if (issueViewMatch) {
+  if (issueViewMatch && issueViewMatch[1]) {
     const ticketId = issueViewMatch[1];
     return jiraCLIResponses.issueView(ticketId);
   }
@@ -115,12 +115,12 @@ function getJiraMockResponse(
 
   // Issue create command
   if (jiraCommandPatterns.issueCreate.test(command)) {
-    return jiraCLIResponses.issueCreate();
+    return jiraCLIResponses.issueCreate('Test summary');
   }
 
   // Issue update command
   const issueUpdateMatch = command.match(jiraCommandPatterns.issueUpdate);
-  if (issueUpdateMatch) {
+  if (issueUpdateMatch && issueUpdateMatch[1]) {
     const ticketId = issueUpdateMatch[1];
     return jiraCLIResponses.issueUpdate(ticketId);
   }
@@ -151,7 +151,7 @@ function getJiraMockResponse(
 /**
  * Generate test ticket patterns for validation testing
  */
-function getJiraTestPatterns(): Record<string, RegExp> {
+function getJiraTestPatterns(): Record<string, string[]> {
   const prefix = process.env.JIRA_TICKET_PREFIX || 'TEST';
   return {
     validTickets: [`${prefix}-1234`, `${prefix}-2055`, `${prefix}-9999`],
@@ -187,7 +187,7 @@ function isValidJiraCommand(command: string): boolean {
   );
 }
 
-module.exports = {
+export {
   jiraCLIResponses,
   jiraErrorResponses,
   jiraCommandPatterns,

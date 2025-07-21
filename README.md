@@ -215,7 +215,7 @@ claude-pr-analisys/
 │   └── types/                     # Type definitions
 ├── dist/                          # Compiled JavaScript (generated)
 ├── temp/                          # Temporary files (generated)
-├── CLAUDE.md                      # Project instructions for Claude
+├── .claude/CLAUDE.md              # Project instructions for Claude
 ├── package.json                   # Dependencies and scripts
 ├── tsconfig.json                  # TypeScript configuration
 ├── .eslintrc.js                   # ESLint configuration
@@ -294,7 +294,7 @@ npm test
 ### Support
 
 - **Issues**: Report bugs and feature requests on GitHub Issues
-- **Documentation**: See `CLAUDE.md` for detailed project instructions
+- **Documentation**: See `.claude/CLAUDE.md` for detailed project instructions
 - **Testing**: Comprehensive test suite provides usage examples
 
 ---

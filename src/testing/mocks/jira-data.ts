@@ -3,7 +3,7 @@
  * Author: Anthony Rizzo, Co-pilot: Claude
  */
 
-const { getTestTicketId } = require('../utils/test-helpers');
+import { getTestTicketId } from '../utils/test-helpers';
 
 export interface JiraMockResponse {
   stdout: string;
@@ -30,7 +30,7 @@ export interface JiraPatterns {
  * Generate mock Jira data for testing using current environment
  */
 export function getMockJiraData(ticketId?: string): string {
-  const ticket = ticketId || (getTestTicketId() as string);
+  const ticket = ticketId || getTestTicketId();
   return `🐞 Bug  🚧 Ready to Test  ⌛ Sat, 19 Jul 25  👷 Sumyouktha Rajendra Kumar  🔑️ ${ticket}  💭 2 comments  🧵 2 linked
 
 # Unable to set the forms to "Ready to Read" for the study configured to apply validation rules

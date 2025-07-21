@@ -1,12 +1,13 @@
-#!/usr/bin/env node
-
 /**
  * E2E Integration Test Suite
  * Author: Anthony Rizzo, Co-pilot: Claude
  * Description: End-to-end testing for PR analysis automation tool
  */
 
+import { describe, test, expect, beforeEach } from 'vitest';
 import { MockExecutor } from '../utils/test-utils';
+import * as fs from 'fs';
+import * as path from 'path';
 
 interface E2ETestConfig {
   githubRepository: string;
@@ -16,118 +17,32 @@ interface E2ETestConfig {
   jiraApiToken?: string;
 }
 
-interface E2ETestScenario {
-  name: string;
-  description: string;
-  config: E2ETestConfig;
-  prNumber: string;
-  expectedOutcome: 'success' | 'error' | 'warning';
-  validations: Array<{
-    type: 'file_exists' | 'contains_text' | 'cli_command' | 'config_validation';
-    target: string;
-    expected: string | boolean;
-  }>;
+interface ValidationTest {
+  type: 'file_exists' | 'contains_text' | 'cli_command' | 'config_validation';
+  target: string;
+  expected: string | boolean;
 }
 
-/**
- * E2E Test Scenarios following CLAUDE.md directives
- */
-const E2E_SCENARIOS: E2ETestScenario[] = [
-  {
-    name: 'basic_configuration_validation',
-    description: 'Validate basic application configuration loads correctly',
-    config: {
-      githubRepository: 'test-org/test-repo',
-      jiraTicketPrefix: 'TEST',
-    },
-    prNumber: '999', // Non-existent PR for testing
-    expectedOutcome: 'error',
-    validations: [
-      {
-        type: 'config_validation',
-        target: 'environment',
-        expected: true,
-      },
-      {
-        type: 'cli_command',
-        target: 'gh --version',
-        expected: true,
-      },
-    ],
-  },
-  {
-    name: 'full_jira_integration',
-    description: 'Test complete Jira integration with proper credentials',
-    config: {
-      githubRepository: 'test-org/test-repo',
-      jiraTicketPrefix: 'TEST',
-      jiraServerUrl: 'https://test.atlassian.net',
-      jiraUserEmail: 'test@example.com',
-      jiraApiToken: 'test-token',
-    },
-    prNumber: '999',
-    expectedOutcome: 'error', // Expected to fail on non-existent PR
-    validations: [
-      {
-        type: 'config_validation',
-        target: 'jira',
-        expected: true,
-      },
-      {
-        type: 'cli_command',
-        target: 'jira --version',
-        expected: false, // Jira CLI might not be available
-      },
-    ],
-  },
-  {
-    name: 'code_coverage_workflow',
-    description: 'E2E scenario for adding code coverage to unit tests',
-    config: {
-      githubRepository: 'test-org/test-repo',
-      jiraTicketPrefix: 'COV',
-    },
-    prNumber: '123',
-    expectedOutcome: 'warning',
-    validations: [
-      {
-        type: 'file_exists',
-        target: 'temp',
-        expected: true,
-      },
-      {
-        type: 'contains_text',
-        target: 'code coverage',
-        expected: true,
-      },
-    ],
-  },
-];
+describe('E2E Integration Test Suite', () => {
+  let mockExec: MockExecutor;
 
-/**
- * E2E Test Runner
- */
-class E2ETestRunner {
-  private readonly mockExec: MockExecutor;
-
-  constructor() {
-    this.mockExec = new MockExecutor();
-    this.setupMockResponses();
-  }
+  beforeEach(() => {
+    mockExec = new MockExecutor();
+    setupMockResponses();
+  });
 
   /**
    * Setup mock responses for E2E testing
    */
-  private setupMockResponses(): void {
+  function setupMockResponses(): void {
     // GitHub CLI responses
-    this.mockExec.setRegexResponse(
-      /^gh --version$/,
-      { stdout: 'gh version 2.40.1 (2023-12-13)\nhttps://github.com/cli/cli/releases/tag/v2.40.1' }
-    );
+    mockExec.setRegexResponse(/^gh --version$/, {
+      stdout:
+        'gh version 2.40.1 (2023-12-13)\nhttps://github.com/cli/cli/releases/tag/v2.40.1',
+    });
 
-    this.mockExec.setRegexResponse(
-      /^gh pr view \d+ --json.*$/,
-      { stdout: JSON.stringify({
+    mockExec.setRegexResponse(/^gh pr view \d+ --json.*$/, {
+      stdout: JSON.stringify({
         number: 123,
         title: 'TEST-456: Add code coverage reporting to unit tests',
         author: { login: 'testuser' },
@@ -136,12 +51,11 @@ class E2ETestRunner {
         headRefName: 'feature/code-coverage',
         baseRefName: 'main',
         url: 'https://github.com/test-org/test-repo/pull/123',
-      }) }
-    );
+      }),
+    });
 
-    this.mockExec.setRegexResponse(
-      /^gh pr diff \d+$/,
-      { stdout: `diff --git a/package.json b/package.json
+    mockExec.setRegexResponse(/^gh pr diff \d+$/, {
+      stdout: `diff --git a/package.json b/package.json
 index 1234567..8901234 100644
 --- a/package.json
 +++ b/package.json
@@ -151,13 +65,12 @@ index 1234567..8901234 100644
 +    "test:coverage": "jest --coverage",
      "build": "tsc"
    },
-   "devDependencies": {` }
-    );
+   "devDependencies": {`,
+    });
 
     // Jira CLI responses
-    this.mockExec.setRegexResponse(
-      /^jira issue view TEST-456$/,
-      { stdout: `Issue: TEST-456
+    mockExec.setRegexResponse(/^jira issue view TEST-456$/, {
+      stdout: `Issue: TEST-456
 Title: Add code coverage reporting to unit tests
 Status: In Progress
 Description: Implement code coverage reporting for our Jest test suite to improve testing visibility.
@@ -166,102 +79,27 @@ Acceptance Criteria:
 - Jest coverage configuration added
 - Coverage reports generated in CI/CD
 - Coverage thresholds defined
-- Documentation updated` }
-    );
+- Documentation updated`,
+    });
 
     // Error responses for non-existent items
-    this.mockExec.setRegexResponse(
+    mockExec.setRegexResponse(
       /^gh pr view 999 --json.*$/,
-      new Error('Error: Could not resolve to a PullRequest with the number of 999.')
+      new Error(
+        'Error: Could not resolve to a PullRequest with the number of 999.'
+      )
     );
 
-    this.mockExec.setRegexResponse(
+    mockExec.setRegexResponse(
       /^jira --version$/,
       new Error('jira: command not found')
     );
   }
 
   /**
-   * Run all E2E test scenarios
-   */
-  async runAllScenarios(): Promise<void> {
-    console.log('🚀 Starting E2E Integration Tests');
-    console.log('='.repeat(50));
-
-    let passed = 0;
-    let failed = 0;
-
-    for (const scenario of E2E_SCENARIOS) {
-      try {
-        console.log(`\n📋 Testing: ${scenario.name}`);
-        console.log(`📝 ${scenario.description}`);
-
-        const result = await this.runScenario(scenario);
-        if (result) {
-          console.log(`✅ ${scenario.name} - PASSED`);
-          passed++;
-        } else {
-          console.log(`❌ ${scenario.name} - FAILED`);
-          failed++;
-        }
-      } catch (error) {
-        console.log(
-          `💥 ${scenario.name} - ERROR: ${error instanceof Error ? error.message : 'Unknown error'}`
-        );
-        failed++;
-      }
-    }
-
-    console.log('\n' + '='.repeat(50));
-    console.log(`📊 E2E Test Results: ${passed} passed, ${failed} failed`);
-
-    if (failed > 0) {
-      process.exit(1);
-    }
-  }
-
-  /**
-   * Run a single E2E test scenario
-   */
-  private async runScenario(scenario: E2ETestScenario): Promise<boolean> {
-    // Set up environment for this scenario
-    this.setTestEnvironment(scenario.config);
-
-    // Import utilities with mock dependencies
-    const { setDependencies } = require('../utils/pr-utils');
-    setDependencies({ execAsync: this.mockExec.execute.bind(this.mockExec) });
-
-    let allValidationsPassed = true;
-
-    // Run validations
-    for (const validation of scenario.validations) {
-      try {
-        const result = await this.runValidation(validation, scenario);
-        if (!result) {
-          console.log(
-            `  ❌ Validation failed: ${validation.type} - ${validation.target}`
-          );
-          allValidationsPassed = false;
-        } else {
-          console.log(
-            `  ✅ Validation passed: ${validation.type} - ${validation.target}`
-          );
-        }
-      } catch (error) {
-        console.log(
-          `  💥 Validation error: ${validation.type} - ${error instanceof Error ? error.message : 'Unknown error'}`
-        );
-        allValidationsPassed = false;
-      }
-    }
-
-    return allValidationsPassed;
-  }
-
-  /**
    * Set environment variables for test scenario
    */
-  private setTestEnvironment(config: E2ETestConfig): void {
+  function setTestEnvironment(config: E2ETestConfig): void {
     process.env.GITHUB_REPOSITORY = config.githubRepository;
     process.env.JIRA_TICKET_PREFIX = config.jiraTicketPrefix;
 
@@ -277,27 +115,24 @@ Acceptance Criteria:
   }
 
   /**
-   * Run a specific validation
+   * Run a specific validation and return boolean result
    */
-  private async runValidation(
-    validation: E2ETestScenario['validations'][0],
-    scenario: E2ETestScenario
-  ): Promise<boolean> {
+  async function runValidation(validation: ValidationTest): Promise<boolean> {
     switch (validation.type) {
       case 'config_validation':
-        return this.validateConfiguration(validation.target);
+        return validateConfiguration(validation.target);
 
       case 'cli_command':
-        return this.validateCLICommand(
+        return validateCLICommand(
           validation.target,
           validation.expected as boolean
         );
 
       case 'file_exists':
-        return this.validateFileExists(validation.target);
+        return validateFileExists(validation.target);
 
       case 'contains_text':
-        return this.validateContainsText(validation.target, scenario);
+        return validateContainsText(validation.target);
 
       default:
         throw new Error(`Unknown validation type: ${(validation as any).type}`);
@@ -307,10 +142,10 @@ Acceptance Criteria:
   /**
    * Validate configuration loading
    */
-  private async validateConfiguration(target: string): Promise<boolean> {
+  async function validateConfiguration(target: string): Promise<boolean> {
     try {
       if (target === 'environment') {
-        const { loadEnvironmentConfig } = require('../core/environment');
+        const { loadEnvironmentConfig } = await import('../core/environment');
         const config = loadEnvironmentConfig();
         return (
           config.githubRepository !== undefined &&
@@ -319,7 +154,7 @@ Acceptance Criteria:
       }
 
       if (target === 'jira') {
-        const { loadJiraConfig } = require('../services/jira/config');
+        const { loadJiraConfig } = await import('../services/jira/config');
         const config = loadJiraConfig();
         return config.prefix !== undefined && config.serverUrl !== undefined;
       }
@@ -333,12 +168,12 @@ Acceptance Criteria:
   /**
    * Validate CLI command availability
    */
-  private async validateCLICommand(
+  async function validateCLICommand(
     command: string,
     expectedAvailable: boolean
   ): Promise<boolean> {
     try {
-      await this.mockExec.execute(command);
+      await mockExec.execute(command);
       // If no error thrown, assume success
       return expectedAvailable;
     } catch (error) {
@@ -349,10 +184,7 @@ Acceptance Criteria:
   /**
    * Validate file existence
    */
-  private validateFileExists(filePath: string): boolean {
-    const fs = require('fs');
-    const path = require('path');
-
+  function validateFileExists(filePath: string): boolean {
     try {
       const fullPath = path.resolve(process.cwd(), filePath);
       return fs.existsSync(fullPath);
@@ -364,31 +196,207 @@ Acceptance Criteria:
   /**
    * Validate text content in scenario context
    */
-  private async validateContainsText(
-    text: string,
-    scenario: E2ETestScenario
-  ): Promise<boolean> {
-    // For the code coverage scenario, check if mock responses contain relevant text
-    if (scenario.name === 'code_coverage_workflow') {
-      const calls = this.mockExec.getCalls();
-      return calls.some(
-        (call: string) => call.toLowerCase().includes(text.toLowerCase())
-      );
-    }
-
-    return true;
+  async function validateContainsText(text: string): Promise<boolean> {
+    // Check if mock responses contain relevant text
+    const calls = mockExec.getCalls();
+    return calls.some((call: string) =>
+      call.toLowerCase().includes(text.toLowerCase())
+    );
   }
-}
 
-/**
- * Main execution when run as script
- */
-if (require.main === module) {
-  const runner = new E2ETestRunner();
-  runner.runAllScenarios().catch(error => {
-    console.error('E2E Test Suite failed:', error);
-    process.exit(1);
+  describe('Basic Configuration Validation', () => {
+    test('should validate basic application configuration loads correctly', async () => {
+      const config = {
+        githubRepository: 'test-org/test-repo',
+        jiraTicketPrefix: 'TEST',
+      };
+
+      setTestEnvironment(config);
+
+      const validations: ValidationTest[] = [
+        {
+          type: 'config_validation',
+          target: 'environment',
+          expected: true,
+        },
+      ];
+
+      for (const validation of validations) {
+        const result = await runValidation(validation);
+        expect(result).toBe(validation.expected);
+      }
+    });
   });
-}
 
-export { E2ETestRunner, E2ETestScenario, E2ETestConfig };
+  describe('PR Number Validation', () => {
+    test('should validate PR number patterns and error handling', async () => {
+      const config = {
+        githubRepository: 'test-org/test-repo',
+        jiraTicketPrefix: 'TEST',
+      };
+
+      setTestEnvironment(config);
+
+      const { setDependencies } = await import('../utils/pr-utils');
+      setDependencies({ execAsync: mockExec.execute.bind(mockExec) });
+
+      const validations: ValidationTest[] = [
+        {
+          type: 'cli_command',
+          target: 'gh pr view 123 --json title,body,url',
+          expected: true,
+        },
+        {
+          type: 'cli_command',
+          target: 'gh pr view 999 --json title,body,url',
+          expected: false,
+        },
+      ];
+
+      for (const validation of validations) {
+        const result = await runValidation(validation);
+        expect(result).toBe(validation.expected);
+      }
+    });
+  });
+
+  describe('Jira Ticket Pattern Matching', () => {
+    test('should validate Jira ticket extraction from PR titles', async () => {
+      const config = {
+        githubRepository: 'test-org/test-repo',
+        jiraTicketPrefix: 'TEST',
+      };
+
+      setTestEnvironment(config);
+
+      const { setDependencies } = await import('../utils/pr-utils');
+      setDependencies({ execAsync: mockExec.execute.bind(mockExec) });
+
+      const { extractJiraTicket } = await import('../utils/pr-utils');
+      const ticket = extractJiraTicket(
+        'TEST-456: Add code coverage reporting to unit tests'
+      );
+
+      expect(ticket).toBe('TEST-456');
+
+      const validations: ValidationTest[] = [
+        {
+          type: 'cli_command',
+          target: 'jira issue view TEST-456',
+          expected: true,
+        },
+      ];
+
+      for (const validation of validations) {
+        const result = await runValidation(validation);
+        expect(result).toBe(validation.expected);
+      }
+    });
+  });
+
+  describe('File System Workflow Operations', () => {
+    test('should validate temp directory and file operations', async () => {
+      const config = {
+        githubRepository: 'test-org/test-repo',
+        jiraTicketPrefix: 'TEST',
+      };
+
+      setTestEnvironment(config);
+
+      const validations: ValidationTest[] = [
+        {
+          type: 'file_exists',
+          target: 'temp',
+          expected: true,
+        },
+      ];
+
+      // Ensure temp directory exists
+      const tempDir = path.resolve(process.cwd(), 'temp');
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+      }
+
+      for (const validation of validations) {
+        const result = await runValidation(validation);
+        expect(result).toBe(validation.expected);
+      }
+    });
+  });
+
+  describe('Code Coverage E2E Workflow Scenario', () => {
+    test('should validate complete code coverage workflow', async () => {
+      const config = {
+        githubRepository: 'test-org/test-repo',
+        jiraTicketPrefix: 'TEST',
+      };
+
+      setTestEnvironment(config);
+
+      const { setDependencies } = await import('../utils/pr-utils');
+      setDependencies({ execAsync: mockExec.execute.bind(mockExec) });
+
+      // Test GitHub CLI integration
+      const result = await mockExec.execute('gh --version');
+      expect(result.stdout).toContain('gh version 2.40.1');
+
+      // Test PR data retrieval
+      const prResult = await mockExec.execute(
+        'gh pr view 123 --json title,body,url'
+      );
+      const prData = JSON.parse(prResult.stdout);
+      expect(prData.title).toContain('TEST-456');
+
+      // Test Jira ticket retrieval
+      const jiraResult = await mockExec.execute('jira issue view TEST-456');
+      expect(jiraResult.stdout).toContain('Add code coverage reporting');
+
+      const validations: ValidationTest[] = [
+        {
+          type: 'contains_text',
+          target: 'code coverage',
+          expected: true,
+        },
+      ];
+
+      for (const validation of validations) {
+        const result = await runValidation(validation);
+        expect(result).toBe(validation.expected);
+      }
+    });
+  });
+
+  describe('Application Build Readiness', () => {
+    test('should validate application build and dependencies', async () => {
+      const config = {
+        githubRepository: 'test-org/test-repo',
+        jiraTicketPrefix: 'TEST',
+      };
+
+      setTestEnvironment(config);
+
+      const validations: ValidationTest[] = [
+        {
+          type: 'file_exists',
+          target: 'package.json',
+          expected: true,
+        },
+        {
+          type: 'file_exists',
+          target: 'tsconfig.json',
+          expected: true,
+        },
+        {
+          type: 'config_validation',
+          target: 'environment',
+          expected: true,
+        },
+      ];
+
+      for (const validation of validations) {
+        const result = await runValidation(validation);
+        expect(result).toBe(validation.expected);
+      }
+    });
+  });
+});

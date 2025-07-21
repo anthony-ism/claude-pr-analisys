@@ -3,9 +3,9 @@ import path from 'path';
 
 export default defineConfig({
   test: {
-    // Test file patterns - temporarily only run simple test
+    // Test file patterns - include all test files
     include: [
-      'src/tests/simple-analyze-pr.test.ts'
+      'src/tests/*.test.ts'
     ],
     exclude: [
       'node_modules',
@@ -17,6 +17,9 @@ export default defineConfig({
     env: {
       JIRA_TICKET_PREFIX: 'TEST',
       GITHUB_REPOSITORY: 'test-org/test-repo',
+      JIRA_SERVER_URL: 'https://test.atlassian.net',
+      JIRA_USER_EMAIL: 'test@example.com',
+      JIRA_API_TOKEN: 'test-token',
     },
 
     // Global setup and teardown

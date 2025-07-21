@@ -291,4 +291,6 @@ if (require.main === module) {
 }
 
 // Export for testing and module use
+// Export functions with both original and test-expected names
 export { main, validateOutputFile, postComment, previewFile, usage };
+export { validatePR, postComment as postAnalysisComment };

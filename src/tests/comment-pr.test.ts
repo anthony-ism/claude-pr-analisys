@@ -79,7 +79,7 @@ describe('Comment PR Test Suite', () => {
 
   test('Post analysis comment calls GitHub CLI', async () => {
     const testFile = createTestFile('Test analysis content');
-    
+
     const result = await commentPr.postAnalysisComment('123', testFile);
     expect(result).toBe(true);
 
@@ -122,17 +122,19 @@ describe('Comment PR Test Suite', () => {
   });
 
   test('Error handling for missing output files', async () => {
-    const result = await commentPr.validateOutputFile('/path/that/does/not/exist.txt');
+    const result = await commentPr.validateOutputFile(
+      '/path/that/does/not/exist.txt'
+    );
     expect(result).toBe(false);
   });
 
   test('Successful comment posting workflow', async () => {
     const testFile = createTestFile('Comprehensive analysis content for PR');
-    
+
     // Validate file first
     const isValid = await commentPr.validateOutputFile(testFile);
     expect(isValid).toBe(true);
-    
+
     // Post comment
     const posted = await commentPr.postAnalysisComment('456', testFile);
     expect(posted).toBe(true);
@@ -142,7 +144,7 @@ describe('Comment PR Test Suite', () => {
 
   test('File validation with whitespace-only content', async () => {
     const whitespaceFile = createTestFile('   \n\t  \n  ');
-    
+
     const result = await commentPr.validateOutputFile(whitespaceFile);
     expect(result).toBe(false);
 
@@ -151,9 +153,9 @@ describe('Comment PR Test Suite', () => {
 
   test('GitHub CLI command formatting', async () => {
     const testFile = createTestFile('Test comment body');
-    
+
     await commentPr.postAnalysisComment('789', testFile);
-    
+
     const calls = mockExecutor.getCalls();
     const commentCall = calls.find(call => call.includes('gh pr comment'));
     expect(commentCall).toContain('789');
@@ -170,10 +172,10 @@ describe('Comment PR Test Suite', () => {
   test('Large file content handling', async () => {
     const largeContent = 'A'.repeat(10000); // 10KB of content
     const largeFile = createTestFile(largeContent);
-    
+
     const isValid = await commentPr.validateOutputFile(largeFile);
     expect(isValid).toBe(true);
-    
+
     const posted = await commentPr.postAnalysisComment('100', largeFile);
     expect(posted).toBe(true);
 

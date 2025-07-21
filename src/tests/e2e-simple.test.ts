@@ -1,38 +1,34 @@
-#!/usr/bin/env node
-
 /**
  * Simple E2E Integration Test
  * Author: Anthony Rizzo, Co-pilot: Claude
  * Description: Simplified end-to-end testing for PR analysis automation tool
  */
 
-import { TestRunner, MockExecutor } from '../utils/test-utils';
+import { describe, test, expect, beforeEach } from 'vitest';
+import { MockExecutor } from '../utils/test-utils';
+import * as fs from 'fs';
+import * as path from 'path';
 
-/**
- * Simple E2E Test Runner for validating core functionality
- */
-class SimpleE2ETest {
-  private readonly testRunner: TestRunner;
-  private readonly mockExec: MockExecutor;
+describe('Simple E2E Integration Tests', () => {
+  let mockExec: MockExecutor;
 
-  constructor() {
-    this.testRunner = new TestRunner('Simple E2E Tests');
-    this.mockExec = new MockExecutor();
-    this.setupMockResponses();
-  }
+  beforeEach(() => {
+    mockExec = new MockExecutor();
+    setupMockResponses();
+  });
 
   /**
    * Setup mock responses for testing
    */
-  private setupMockResponses(): void {
+  function setupMockResponses(): void {
     // GitHub CLI version check
-    this.mockExec.setRegexResponse(/^gh --version$/, {
+    mockExec.setRegexResponse(/^gh --version$/, {
       stdout:
         'gh version 2.40.1 (2023-12-13)\nhttps://github.com/cli/cli/releases/tag/v2.40.1',
     });
 
     // PR data for code coverage scenario
-    this.mockExec.setRegexResponse(/^gh pr view \d+ --json.*$/, {
+    mockExec.setRegexResponse(/^gh pr view \d+ --json.*$/, {
       stdout: JSON.stringify({
         number: 123,
         title: 'COV-456: Add code coverage reporting to unit tests',
@@ -46,170 +42,93 @@ class SimpleE2ETest {
     });
 
     // PR diff showing code coverage changes
-    this.mockExec.setRegexResponse(/^gh pr diff \d+$/, {
+    mockExec.setRegexResponse(/^gh pr diff \d+$/, {
       stdout: `diff --git a/package.json b/package.json
-index 1234567..8901234 100644
+index abc123..def456 100644
 --- a/package.json
 +++ b/package.json
-@@ -10,6 +10,7 @@
-   "scripts": {
-     "test": "jest",
-+    "test:coverage": "jest --coverage",
-     "build": "tsc"
-   },
-   "devDependencies": {
-+    "@types/jest": "^29.0.0",
-+    "jest": "^29.0.0"
-   }`,
+@@ -8,6 +8,7 @@
+     "test": "vitest",
++    "test:coverage": "vitest --coverage",
+     "build": "tsc",
+     "lint": "eslint src/**/*.ts"`,
     });
 
-    // Jira ticket for code coverage scenario
-    this.mockExec.setRegexResponse(/^jira issue view COV-456$/, {
-      stdout: `Issue: COV-456
-Title: Add code coverage reporting to unit tests
-Status: In Progress
-Description: Implement code coverage reporting for our Jest test suite to improve testing visibility.
+    // Mock Jira ticket information
+    mockExec.setRegexResponse(/^jira issue view COV-456$/, {
+      stdout: `🐞 Bug  🚧 Ready to Test  ⌛ Sat, 19 Jul 25  👷 Test User  🔑️ COV-456
 
-Acceptance Criteria:
-- Jest coverage configuration added
-- Coverage reports generated in CI/CD
-- Coverage thresholds defined (minimum 80% coverage)
-- Documentation updated with coverage instructions`,
+# Add code coverage reporting to unit tests
+
+## Description
+Implement code coverage reporting functionality to track test coverage metrics and generate reports for the development team.
+
+## Acceptance Criteria
+- Configure Jest/Vitest for coverage reporting
+- Set minimum coverage thresholds (80%)
+- Generate HTML coverage reports
+- Integrate with CI/CD pipeline`,
     });
   }
 
-  /**
-   * Run E2E test scenarios
-   */
-  async runTests(): Promise<boolean> {
-    console.log('🚀 Starting Simple E2E Integration Tests');
-    console.log('='.repeat(50));
+  test('Environment Configuration', async () => {
+    // Set environment variables
+    process.env.GITHUB_REPOSITORY = 'test-org/test-repo';
+    process.env.JIRA_TICKET_PREFIX = 'COV';
 
-    // Test 1: Environment configuration validation
-    this.testRunner.test('Environment Configuration', async () => {
-      process.env.GITHUB_REPOSITORY = 'test-org/test-repo';
-      process.env.JIRA_TICKET_PREFIX = 'COV';
+    const { loadEnvironmentConfig } = await import('../core/environment');
+    const config = loadEnvironmentConfig();
 
-      const { loadEnvironmentConfig } = require('../core/environment');
-      const config = loadEnvironmentConfig();
+    expect(config.githubRepository).toBeDefined();
+    expect(config.jiraTicketPrefix).toBeDefined();
+    expect(config.githubRepository).toBe('test-org/test-repo');
+    expect(config.jiraTicketPrefix).toBe('COV');
+  });
 
-      if (!config.githubRepository || !config.jiraTicketPrefix) {
-        throw new Error(
-          'Environment configuration failed to load required variables'
-        );
-      }
+  test('GitHub CLI Integration', async () => {
+    const { setDependencies } = await import('../utils/pr-utils');
+    setDependencies({ execAsync: mockExec.execute.bind(mockExec) });
 
-      console.log('  ✓ Environment variables loaded correctly');
-    });
+    const { checkGitHubCLI } = await import('../services/github');
+    const hasGH = await checkGitHubCLI();
 
-    // Test 2: GitHub CLI integration
-    this.testRunner.test('GitHub CLI Integration', async () => {
-      const { setDependencies } = require('../utils/pr-utils');
-      setDependencies({ execAsync: this.mockExec.execute.bind(this.mockExec) });
+    expect(hasGH).toBe(true);
+  });
 
-      const { checkGitHubCLI } = require('../services/github');
-      const hasGH = await checkGitHubCLI();
+  test('PR Utilities', async () => {
+    const { validatePRNumber } = await import('../utils/pr-utils');
 
-      if (!hasGH) {
-        throw new Error('GitHub CLI check failed');
-      }
+    const validTest = validatePRNumber('123');
+    const invalidTest = validatePRNumber('abc');
 
-      console.log('  ✓ GitHub CLI integration working');
-    });
+    expect(validTest).toBe(true);
+    expect(invalidTest).toBe(false);
+  });
 
-    // Test 3: PR utilities functionality
-    this.testRunner.test('PR Utilities', async () => {
-      const { validatePRNumber } = require('../utils/pr-utils');
+  test('Code Coverage Workflow Simulation', async () => {
+    const { setDependencies } = await import('../utils/pr-utils');
+    setDependencies({ execAsync: mockExec.execute.bind(mockExec) });
 
-      const validTest = validatePRNumber('123');
-      const invalidTest = validatePRNumber('abc');
+    // Simulate extracting Jira ticket from PR title
+    const { extractJiraTicket } = await import('../utils/pr-utils');
+    const ticket = extractJiraTicket(
+      'COV-456: Add code coverage reporting to unit tests'
+    );
 
-      if (!validTest || invalidTest) {
-        throw new Error('PR number validation not working correctly');
-      }
+    expect(ticket).toBe('COV-456');
 
-      console.log('  ✓ PR utilities working correctly');
-    });
+    // Test that mock commands are working
+    const result = await mockExec.execute('gh --version');
+    expect(result.stdout).toContain('gh version 2.40.1');
+  });
 
-    // Test 4: Code coverage scenario simulation
-    this.testRunner.test('Code Coverage Workflow Simulation', async () => {
-      const { setDependencies } = require('../utils/pr-utils');
-      setDependencies({ execAsync: this.mockExec.execute.bind(this.mockExec) });
-
-      // Simulate extracting Jira ticket from PR title
-      const { extractJiraTicket } = require('../utils/pr-utils');
-      const ticket = extractJiraTicket(
-        'COV-456: Add code coverage reporting to unit tests'
-      );
-
-      if (ticket !== 'COV-456') {
-        throw new Error(`Expected COV-456, got ${ticket}`);
-      }
-
-      // Test that mock commands are working
-      const calls = this.mockExec.getCalls();
-      const ghVersionCalled = calls.some(call => call.includes('gh --version'));
-
-      if (!ghVersionCalled) {
-        // Trigger a mock command to test the system
-        await this.mockExec.execute('gh --version');
-      }
-
-      console.log('  ✓ Code coverage workflow simulation completed');
-    });
-
-    // Test 5: File system operations
-    this.testRunner.test('File System Operations', async () => {
-      const fs = require('fs');
-      const path = require('path');
-
-      // Check that temp directory can be created
-      const tempDir = path.resolve(process.cwd(), 'temp');
-      if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir, { recursive: true });
-      }
-
-      if (!fs.existsSync(tempDir)) {
-        throw new Error('Failed to create temp directory');
-      }
-
-      console.log('  ✓ File system operations working');
-    });
-
-    const allPassed = await this.testRunner.run();
-
-    if (allPassed) {
-      console.log(
-        '\n🎉 All E2E tests passed! The application is ready for production use.'
-      );
-      console.log('\n📋 Next Steps:');
-      console.log('  1. Set up proper Jira credentials for full integration');
-      console.log('  2. Create test pull requests with Jira ticket references');
-      console.log('  3. Test the complete analyze-pr workflow');
-    } else {
-      console.log(
-        '\n❌ Some E2E tests failed. Please review the errors above.'
-      );
+  test('File System Operations', async () => {
+    // Check that temp directory can be created
+    const tempDir = path.resolve(process.cwd(), 'temp');
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
     }
 
-    return allPassed;
-  }
-}
-
-/**
- * Main execution when run as script
- */
-if (require.main === module) {
-  const test = new SimpleE2ETest();
-  test
-    .runTests()
-    .then(passed => {
-      process.exit(passed ? 0 : 1);
-    })
-    .catch(error => {
-      console.error('E2E Test execution failed:', error);
-      process.exit(1);
-    });
-}
-
-export { SimpleE2ETest };
+    expect(fs.existsSync(tempDir)).toBe(true);
+  });
+});

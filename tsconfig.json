@@ -37,7 +37,9 @@
     "dist",
     "temp",
     "**/mock-responses.ts",
-    "**/test-helpers.ts"
+    "**/test-helpers.ts",
+    "**/*.test.ts",
+    "src/tests/**/*"
   ],
   "ts-node": {
     "esm": false,

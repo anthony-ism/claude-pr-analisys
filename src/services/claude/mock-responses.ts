@@ -3,7 +3,7 @@
  * Author: Anthony Rizzo, Co-pilot: Claude
  */
 
-const { getTestTicketId } = require('../../testing/utils/test-helpers');
+import { getTestTicketId } from '../../testing/utils/test-helpers';
 
 /**
  * Generate mock Claude analysis response
@@ -233,7 +233,7 @@ function isValidClaudeCommand(command: string): boolean {
   );
 }
 
-module.exports = {
+export {
   claudeCLIResponses,
   claudeErrorResponses,
   claudeCommandPatterns,

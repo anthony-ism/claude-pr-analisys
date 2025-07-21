@@ -3,7 +3,7 @@
  * Author: Anthony Rizzo, Co-pilot: Claude
  */
 
-const { getTestTicketId } = require('../utils/test-helpers');
+import { getTestTicketId } from '../utils/test-helpers';
 
 export interface GitHubPRData {
   view: string;
@@ -38,7 +38,7 @@ export interface GitHubMockResponses {
  * Generate mock PR data for testing using current environment
  */
 export function getMockPRData(): GitHubPRData {
-  const ticketId = getTestTicketId() as string;
+  const ticketId = getTestTicketId();
   return {
     view: `title: ${ticketId}: Unable to set the forms to Ready to Read for the study con…
 state: MERGED
@@ -69,7 +69,7 @@ index ccdfba89c..6c513312d 100644
  */
 export const mockGitHubResponses: GitHubMockResponses = {
   prView: (prNumber: number): GitHubMockResponse => {
-    const ticketId = getTestTicketId() as string;
+    const ticketId = getTestTicketId();
     return {
       stdout: `title: ${ticketId}: Test PR title
 state: OPEN
@@ -89,7 +89,7 @@ index 1234567..abcdefg 100644
   }),
 
   prJSON: (prNumber: number): GitHubMockResponse => {
-    const ticketId = getTestTicketId() as string;
+    const ticketId = getTestTicketId();
     return {
       stdout: JSON.stringify({
         title: `${ticketId}: Test PR title`,
