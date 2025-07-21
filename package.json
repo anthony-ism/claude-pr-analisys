@@ -25,7 +25,7 @@
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
-    "test:e2e-real": "vitest run --config vitest.e2e-real.config.ts",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "lint": "eslint \"src/**/*.{ts,js}\" --ext .ts,.js",
     "lint:fix": "eslint \"src/**/*.{ts,js}\" --ext .ts,.js --fix",
     "lint:ci": "eslint \"src/**/*.{ts,js}\" --ext .ts,.js --format=compact",

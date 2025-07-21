@@ -5,7 +5,7 @@ export default defineConfig({
   test: {
     // Test file patterns - only real E2E tests
     include: [
-      'src/tests/e2e-real.test.ts'
+      'src/tests/e2e.test.ts'
     ],
     exclude: [
       'node_modules',
@@ -26,7 +26,7 @@ export default defineConfig({
 
     // Timeout configuration - long timeouts for real API calls
     testTimeout: 60000, // 60 seconds
-    
+
     // Allow tests to run in sequence to avoid API rate limits
     pool: 'threads',
     poolOptions: {
