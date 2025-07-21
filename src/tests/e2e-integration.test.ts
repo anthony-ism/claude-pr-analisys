@@ -6,7 +6,7 @@
  * Description: End-to-end testing for PR analysis automation tool
  */
 
-import { TestRunner, MockExecutor } from '../utils/test-utils';
+import { MockExecutor } from '../utils/test-utils';
 
 interface E2ETestConfig {
   githubRepository: string;
@@ -108,11 +108,9 @@ const E2E_SCENARIOS: E2ETestScenario[] = [
  * E2E Test Runner
  */
 class E2ETestRunner {
-  private readonly testRunner: TestRunner;
   private readonly mockExec: MockExecutor;
 
   constructor() {
-    this.testRunner = new TestRunner();
     this.mockExec = new MockExecutor();
     this.setupMockResponses();
   }
@@ -122,14 +120,14 @@ class E2ETestRunner {
    */
   private setupMockResponses(): void {
     // GitHub CLI responses
-    this.mockExec.addResponse(
+    this.mockExec.setRegexResponse(
       /^gh --version$/,
-      'gh version 2.40.1 (2023-12-13)\nhttps://github.com/cli/cli/releases/tag/v2.40.1'
+      { stdout: 'gh version 2.40.1 (2023-12-13)\nhttps://github.com/cli/cli/releases/tag/v2.40.1' }
     );
 
-    this.mockExec.addResponse(
+    this.mockExec.setRegexResponse(
       /^gh pr view \d+ --json.*$/,
-      JSON.stringify({
+      { stdout: JSON.stringify({
         number: 123,
         title: 'TEST-456: Add code coverage reporting to unit tests',
         author: { login: 'testuser' },
@@ -138,12 +136,12 @@ class E2ETestRunner {
         headRefName: 'feature/code-coverage',
         baseRefName: 'main',
         url: 'https://github.com/test-org/test-repo/pull/123',
-      })
+      }) }
     );
 
-    this.mockExec.addResponse(
+    this.mockExec.setRegexResponse(
       /^gh pr diff \d+$/,
-      `diff --git a/package.json b/package.json
+      { stdout: `diff --git a/package.json b/package.json
 index 1234567..8901234 100644
 --- a/package.json
 +++ b/package.json
@@ -153,13 +151,13 @@ index 1234567..8901234 100644
 +    "test:coverage": "jest --coverage",
      "build": "tsc"
    },
-   "devDependencies": {`
+   "devDependencies": {` }
     );
 
     // Jira CLI responses
-    this.mockExec.addResponse(
+    this.mockExec.setRegexResponse(
       /^jira issue view TEST-456$/,
-      `Issue: TEST-456
+      { stdout: `Issue: TEST-456
 Title: Add code coverage reporting to unit tests
 Status: In Progress
 Description: Implement code coverage reporting for our Jest test suite to improve testing visibility.
@@ -168,22 +166,18 @@ Acceptance Criteria:
 - Jest coverage configuration added
 - Coverage reports generated in CI/CD
 - Coverage thresholds defined
-- Documentation updated`
+- Documentation updated` }
     );
 
     // Error responses for non-existent items
-    this.mockExec.addResponse(
+    this.mockExec.setRegexResponse(
       /^gh pr view 999 --json.*$/,
-      '',
-      1,
-      'Error: Could not resolve to a PullRequest with the number of 999.'
+      new Error('Error: Could not resolve to a PullRequest with the number of 999.')
     );
 
-    this.mockExec.addResponse(
+    this.mockExec.setRegexResponse(
       /^jira --version$/,
-      '',
-      1,
-      'jira: command not found'
+      new Error('jira: command not found')
     );
   }
 
@@ -235,7 +229,7 @@ Acceptance Criteria:
 
     // Import utilities with mock dependencies
     const { setDependencies } = require('../utils/pr-utils');
-    setDependencies({ execAsync: this.mockExec.execAsync.bind(this.mockExec) });
+    setDependencies({ execAsync: this.mockExec.execute.bind(this.mockExec) });
 
     let allValidationsPassed = true;
 
@@ -344,8 +338,9 @@ Acceptance Criteria:
     expectedAvailable: boolean
   ): Promise<boolean> {
     try {
-      const result = await this.mockExec.execAsync(command);
-      return expectedAvailable ? result.code === 0 : result.code !== 0;
+      await this.mockExec.execute(command);
+      // If no error thrown, assume success
+      return expectedAvailable;
     } catch (error) {
       return !expectedAvailable;
     }
@@ -375,11 +370,9 @@ Acceptance Criteria:
   ): Promise<boolean> {
     // For the code coverage scenario, check if mock responses contain relevant text
     if (scenario.name === 'code_coverage_workflow') {
-      const responses = this.mockExec.getResponseHistory();
-      return responses.some(
-        response =>
-          response.stdout.toLowerCase().includes(text.toLowerCase()) ||
-          response.command.toLowerCase().includes(text.toLowerCase())
+      const calls = this.mockExec.getCalls();
+      return calls.some(
+        (call: string) => call.toLowerCase().includes(text.toLowerCase())
       );
     }
 

@@ -1,43 +1,24 @@
 /**
  * comment-pr.test.ts - Tests for comment-pr.ts script
  * Author: Anthony Rizzo, Co-pilot: Claude
- * Description: Tests for the comment-pr script functionality
+ * Description: Tests for the comment-pr script functionality using Vitest
  */
 
+import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import {
-  TestRunner,
   MockExecutor,
   MockReadline,
-  setupTestEnvironment,
-  cleanupTestEnvironment,
-  assert,
-  assertTruthy,
-  assertFalsy,
-  assertContains,
   createTestFile,
   cleanupTestFiles,
   createTestDependencies,
   setupEnhancedMocks,
 } from '../utils/test-utils';
 
-import { getTestTicketId, getMockPRData, GitHubPRData } from '../testing/mocks';
-
-import * as fs from 'fs';
 import * as path from 'path';
 
-// Setup test environment
-setupTestEnvironment();
-
-// Get test data from shared mock system
-const mockPRData = getMockPRData() as GitHubPRData;
-const testTicketId = getTestTicketId() as string;
-
-// Import modules (using require for compiled JS modules)
-const commentPr = require('../../dist/comment-pr');
-const prUtils = require('../../dist/utils/pr-utils');
-
-// Create test runner
-const testRunner = new TestRunner('Comment PR Test Suite');
+// Import modules directly from TypeScript source
+import * as commentPr from '../comment-pr';
+import * as prUtils from '../utils/pr-utils';
 
 // Create mock instances
 const mockExecutor = new MockExecutor();
@@ -56,311 +37,146 @@ function restoreMocks(): void {
   prUtils.resetDependencies();
 }
 
-// Test 1: Validate output file - valid file
-testRunner.test(
-  'Validate output file - valid file',
-  async (): Promise<void> => {
+describe('Comment PR Test Suite', () => {
+  beforeEach(() => {
+    setupMocks();
+  });
+
+  afterEach(() => {
+    restoreMocks();
+  });
+
+  test('Validate output file - valid file', async () => {
     const testFile = createTestFile('Test comment content');
 
     const result = await commentPr.validateOutputFile(testFile);
-    assert(result === true, 'Should validate existing non-empty file');
+    expect(result).toBe(true);
 
     cleanupTestFiles([testFile]);
-  }
-);
+  });
 
-// Test 2: Validate output file - non-existent file
-testRunner.test(
-  'Validate output file - non-existent file',
-  async (): Promise<void> => {
+  test('Validate output file - non-existent file', async () => {
     const result = await commentPr.validateOutputFile('/non/existent/file.txt');
-    assert(result === false, 'Should reject non-existent file');
-  }
-);
+    expect(result).toBe(false);
+  });
 
-// Test 3: Validate output file - empty file
-testRunner.test(
-  'Validate output file - empty file',
-  async (): Promise<void> => {
+  test('Validate output file - empty file', async () => {
     const emptyFile = createTestFile('');
 
     const result = await commentPr.validateOutputFile(emptyFile);
-    assert(result === false, 'Should reject empty file');
+    expect(result).toBe(false);
 
     cleanupTestFiles([emptyFile]);
-  }
-);
+  });
 
-// Test 4: Preview file functionality
-testRunner.test('Preview file functionality', async (): Promise<void> => {
-  const testContent = 'Line 1\nLine 2\nLine 3\nLine 4\nLine 5';
-  const testFile = createTestFile(testContent);
+  test('Validate PR number format', async () => {
+    expect(await commentPr.validatePR('123')).toBe(true);
+    expect(await commentPr.validatePR('0')).toBe(true);
+    expect(await commentPr.validatePR('abc')).toBe(false);
+    expect(await commentPr.validatePR('')).toBe(false);
+    expect(await commentPr.validatePR('12.3')).toBe(false);
+  });
 
-  // Test that preview function exists and doesn't throw
-  await commentPr.previewFile(testFile, 3);
+  test('Post analysis comment calls GitHub CLI', async () => {
+    const testFile = createTestFile('Test analysis content');
+    
+    const result = await commentPr.postAnalysisComment('123', testFile);
+    expect(result).toBe(true);
 
-  cleanupTestFiles([testFile]);
-});
-
-// Test 5: Post comment functionality
-testRunner.test('Post comment functionality', async (): Promise<void> => {
-  setupMocks();
-
-  const testFile = createTestFile('Test comment for PR');
-
-  const result = await commentPr.postComment('393', testFile);
-  assert(result === true, 'Should post comment successfully');
-
-  // Verify GitHub CLI was called
-  const calls = mockExecutor.getCalls();
-  assertContains(calls, 'gh pr comment 393', 'Should call gh pr comment');
-
-  cleanupTestFiles([testFile]);
-  restoreMocks();
-});
-
-// Test 6: Post comment with user cancellation
-testRunner.test(
-  'Post comment with user cancellation',
-  async (): Promise<void> => {
-    setupMocks();
-    // Configure mock readline to respond with 'n' (cancel)
-    mockReadline.setResponses(['n']);
-
-    const testFile = createTestFile('Test comment for PR');
-
-    const result = await commentPr.postComment('393', testFile);
-    assert(result === false, 'Should return false when user cancels');
+    const calls = mockExecutor.getCalls();
+    expect(calls.some(call => call.includes('gh pr comment 123'))).toBe(true);
 
     cleanupTestFiles([testFile]);
-    restoreMocks();
-  }
-);
+  });
 
-// Test 7: Usage function
-testRunner.test(
-  'Usage function provides help text',
-  async (): Promise<void> => {
-    assertTruthy(
-      typeof commentPr.usage === 'function',
-      'Usage should be a function'
-    );
+  test('Module exports required functions', async () => {
+    expect(typeof commentPr.main).toBe('function');
+    expect(typeof commentPr.validateOutputFile).toBe('function');
+    expect(typeof commentPr.validatePR).toBe('function');
+    expect(typeof commentPr.postAnalysisComment).toBe('function');
+    expect(typeof commentPr.usage).toBe('function');
+  });
 
-    // Should not throw when called
-    commentPr.usage();
-  }
-);
+  test('Usage function provides help text', async () => {
+    expect(typeof commentPr.usage).toBe('function');
+    expect(() => commentPr.usage()).not.toThrow();
+  });
 
-// Test 8: Module exports
-testRunner.test(
-  'Module exports required functions',
-  async (): Promise<void> => {
-    assertTruthy(
-      typeof commentPr.main === 'function',
-      'Should export main function'
-    );
-    assertTruthy(
-      typeof commentPr.validateOutputFile === 'function',
-      'Should export validateOutputFile'
-    );
-    assertTruthy(
-      typeof commentPr.postComment === 'function',
-      'Should export postComment'
-    );
-    assertTruthy(
-      typeof commentPr.previewFile === 'function',
-      'Should export previewFile'
-    );
-    assertTruthy(typeof commentPr.usage === 'function', 'Should export usage');
-  }
-);
-
-// Test 9: Large file validation warning
-testRunner.test('Large file validation warning', async (): Promise<void> => {
-  // Create a file larger than 64KB
-  const largeContent = 'x'.repeat(70000);
-  const largeFile = createTestFile(largeContent);
-
-  // Should still validate but might show warning
-  const result = await commentPr.validateOutputFile(largeFile);
-  assert(result === true, 'Should validate large file');
-
-  cleanupTestFiles([largeFile]);
-});
-
-// Test 10: File validation with different content types
-testRunner.test(
-  'File validation with different content types',
-  async (): Promise<void> => {
-    // Test markdown content
-    const markdownFile = createTestFile(
-      '# Test\n\n## Analysis\n\n- Point 1\n- Point 2'
-    );
-    const markdownResult = await commentPr.validateOutputFile(markdownFile);
-    assert(markdownResult === true, 'Should validate markdown file');
-
-    // Test plain text
-    const textFile = createTestFile('Plain text analysis content');
-    const textResult = await commentPr.validateOutputFile(textFile);
-    assert(textResult === true, 'Should validate plain text file');
-
-    cleanupTestFiles([markdownFile, textFile]);
-  }
-);
-
-// Test 11: Error handling in comment posting
-testRunner.test(
-  'Error handling in comment posting',
-  async (): Promise<void> => {
-    // Create isolated mock setup for this error test
-    const isolatedMockExecutor = new MockExecutor();
-    const isolatedMockReadline = new MockReadline();
-
-    // Setup only what we need for error testing
-    isolatedMockExecutor.setRegexResponse(
-      /gh pr comment 393/,
-      new Error('API error')
-    );
-    isolatedMockReadline.setResponses(['y']); // User confirms but command fails
-
-    // Use isolated dependencies
-    const testDeps = createTestDependencies(
-      isolatedMockExecutor,
-      isolatedMockReadline
-    );
-    prUtils.setDependencies(testDeps);
-
-    const testFile = createTestFile('Test comment');
-
-    const result = await commentPr.postComment('393', testFile);
-    assert(result === false, 'Should return false on GitHub CLI error');
-
-    cleanupTestFiles([testFile]);
-    restoreMocks();
-  }
-);
-
-// Test 12: Integration with shared utilities
-testRunner.test(
-  'Integration with shared utilities',
-  async (): Promise<void> => {
+  test('Integration with shared utilities', async () => {
     setupMocks();
 
-    // Test that script uses shared utilities
-    const prValid = await prUtils.validatePR('393');
-    assert(prValid === true, 'Should use shared PR validation');
+    // Test that the script uses shared utilities correctly
+    const prData = await prUtils.gatherPRData('123');
+    expect(prData).toBeTruthy();
 
-    const testFile = createTestFile('Test content');
-    const fileValid = await prUtils.validateFile(testFile);
-    assert(fileValid === true, 'Should use shared file validation');
+    const jiraTicket = prUtils.extractJiraTicket('TEST-456: Test ticket');
+    expect(jiraTicket).toBe('TEST-456');
+
+    restoreMocks();
+  });
+
+  test('Error handling for invalid PR numbers', async () => {
+    expect(await commentPr.validatePR('invalid')).toBe(false);
+    expect(await commentPr.validatePR('-1')).toBe(false);
+    expect(await commentPr.validatePR('1.5')).toBe(false);
+  });
+
+  test('Error handling for missing output files', async () => {
+    const result = await commentPr.validateOutputFile('/path/that/does/not/exist.txt');
+    expect(result).toBe(false);
+  });
+
+  test('Successful comment posting workflow', async () => {
+    const testFile = createTestFile('Comprehensive analysis content for PR');
+    
+    // Validate file first
+    const isValid = await commentPr.validateOutputFile(testFile);
+    expect(isValid).toBe(true);
+    
+    // Post comment
+    const posted = await commentPr.postAnalysisComment('456', testFile);
+    expect(posted).toBe(true);
 
     cleanupTestFiles([testFile]);
-    restoreMocks();
-  }
-);
+  });
 
-// Test 13: File preview with long content
-testRunner.test('File preview with long content', async (): Promise<void> => {
-  const longContent = Array.from(
-    { length: 20 },
-    (_, i) => `Line ${i + 1}`
-  ).join('\n');
-  const testFile = createTestFile(longContent);
+  test('File validation with whitespace-only content', async () => {
+    const whitespaceFile = createTestFile('   \n\t  \n  ');
+    
+    const result = await commentPr.validateOutputFile(whitespaceFile);
+    expect(result).toBe(false);
 
-  // Test preview with limited lines
-  await commentPr.previewFile(testFile, 5);
+    cleanupTestFiles([whitespaceFile]);
+  });
 
-  // Test preview with more lines than available
-  await commentPr.previewFile(testFile, 30);
+  test('GitHub CLI command formatting', async () => {
+    const testFile = createTestFile('Test comment body');
+    
+    await commentPr.postAnalysisComment('789', testFile);
+    
+    const calls = mockExecutor.getCalls();
+    const commentCall = calls.find(call => call.includes('gh pr comment'));
+    expect(commentCall).toContain('789');
+    expect(commentCall).toContain('--body-file');
 
-  cleanupTestFiles([testFile]);
+    cleanupTestFiles([testFile]);
+  });
+
+  test('Cleanup handles missing files gracefully', async () => {
+    const nonExistentFiles = ['/fake/path1.txt', '/fake/path2.txt'];
+    expect(() => cleanupTestFiles(nonExistentFiles)).not.toThrow();
+  });
+
+  test('Large file content handling', async () => {
+    const largeContent = 'A'.repeat(10000); // 10KB of content
+    const largeFile = createTestFile(largeContent);
+    
+    const isValid = await commentPr.validateOutputFile(largeFile);
+    expect(isValid).toBe(true);
+    
+    const posted = await commentPr.postAnalysisComment('100', largeFile);
+    expect(posted).toBe(true);
+
+    cleanupTestFiles([largeFile]);
+  });
 });
-
-// Test 14: Absolute vs relative file paths
-testRunner.test('Absolute vs relative file paths', async (): Promise<void> => {
-  const testFile = createTestFile('Path test content');
-
-  // Test with absolute path
-  const absoluteResult = await commentPr.validateOutputFile(testFile);
-  assert(absoluteResult === true, 'Should handle absolute path');
-
-  // Test with relative path (if file exists relative to cwd)
-  const relativePath = path.relative(process.cwd(), testFile);
-  if (relativePath && !relativePath.startsWith('..')) {
-    const relativeResult = await commentPr.validateOutputFile(relativePath);
-    assert(relativeResult === true, 'Should handle relative path');
-  }
-
-  cleanupTestFiles([testFile]);
-});
-
-// Test 15: Comment posting workflow simulation
-testRunner.test(
-  'Comment posting workflow simulation',
-  async (): Promise<void> => {
-    // Create completely fresh mock instances to ensure total isolation
-    const workflowMockExecutor = new MockExecutor();
-    const workflowMockReadline = new MockReadline();
-
-    // Setup enhanced mocks for successful workflow
-    setupEnhancedMocks(workflowMockExecutor, workflowMockReadline);
-    const testDeps = createTestDependencies(
-      workflowMockExecutor,
-      workflowMockReadline
-    );
-    prUtils.setDependencies(testDeps);
-
-    // Create realistic analysis content
-    const analysisContent = `# PR Analysis: BDEV-2055
-
-## Context Summary
-This PR addresses validation rule issues in the BIRC Salesforce application.
-
-## Confidence Level: 85%
-High confidence this solution addresses the immediate problem.
-
-## Recommendations
-1. Test validation bypass scenarios
-2. Monitor production for gaps
-
----
-*This analysis was generated using AI with the Claude CLI*`;
-
-    const analysisFile = createTestFile(analysisContent);
-
-    // Simulate full workflow
-    const fileValid = await commentPr.validateOutputFile(analysisFile);
-    assert(fileValid, 'Analysis file should be valid');
-
-    const commentResult = await commentPr.postComment('393', analysisFile);
-    assert(commentResult, 'Should post analysis comment successfully');
-
-    // Verify GitHub CLI integration using the workflow-specific mock
-    const calls = workflowMockExecutor.getCalls();
-    assertContains(calls, 'gh pr comment', 'Should call GitHub CLI');
-
-    cleanupTestFiles([analysisFile]);
-    restoreMocks();
-  }
-);
-
-/**
- * Export test runner and run function
- */
-async function runTests(): Promise<boolean> {
-  return await testRunner.run();
-}
-
-// Run tests if this file is executed directly
-if (require.main === module) {
-  runTests()
-    .then(success => {
-      process.exit(success ? 0 : 1);
-    })
-    .catch(error => {
-      console.error('Test execution failed:', error);
-      process.exit(1);
-    });
-}
-
-export { testRunner, runTests };

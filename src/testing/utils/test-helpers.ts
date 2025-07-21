@@ -70,7 +70,7 @@ function getTestTicketPatterns() {
   };
 }
 
-module.exports = {
+export {
   getTestTicketId,
   validateTestEnvironment,
   setupTestEnvironment,

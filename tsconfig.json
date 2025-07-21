@@ -36,7 +36,6 @@
     "node_modules",
     "dist",
     "temp",
-    "**/*.test.ts",
     "**/mock-responses.ts",
     "**/test-helpers.ts"
   ],
