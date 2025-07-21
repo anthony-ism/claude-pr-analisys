@@ -26,29 +26,42 @@ export {
   isJiraError,
 } from './operations';
 
-// Mock responses (legacy support)
-const {
-  jiraCLIResponses,
-  jiraErrorResponses,
-  jiraCommandPatterns,
-  getJiraMockResponse,
-  getJiraTestPatterns,
-  isValidJiraCommand,
-} = require('./mock-responses');
+// Mock responses (optional - only available in development builds)
+let mockResponses: Record<string, unknown> | null = null;
+let cliResponses: Record<string, string> | null = null;
+let errorResponses: Record<string, string> | null = null;
+let commandPatterns: Record<string, RegExp> | null = null;
+let getMockResponse: ((command: string) => string | null) | null = null;
+let getTestPatterns: (() => Record<string, RegExp>) | null = null;
+let isValidCommand: ((command: string) => boolean) | null = null;
 
-export const mockResponses = {
-  cliResponses: jiraCLIResponses,
-  errorResponses: jiraErrorResponses,
-  commandPatterns: jiraCommandPatterns,
-  getMockResponse: getJiraMockResponse,
-  getTestPatterns: getJiraTestPatterns,
-  isValidCommand: isValidJiraCommand,
+try {
+  const mockModule = require('./mock-responses');
+  cliResponses = mockModule.jiraCLIResponses;
+  errorResponses = mockModule.jiraErrorResponses;
+  commandPatterns = mockModule.jiraCommandPatterns;
+  getMockResponse = mockModule.getJiraMockResponse;
+  getTestPatterns = mockModule.getJiraTestPatterns;
+  isValidCommand = mockModule.isValidJiraCommand;
+
+  mockResponses = {
+    cliResponses,
+    errorResponses,
+    commandPatterns,
+    getMockResponse,
+    getTestPatterns,
+    isValidCommand,
+  };
+} catch (err) {
+  // Mock responses not available in production build
+}
+
+export {
+  mockResponses,
+  cliResponses,
+  errorResponses,
+  commandPatterns,
+  getMockResponse,
+  getTestPatterns,
+  isValidCommand,
 };
-
-// Legacy exports for backward compatibility
-export const cliResponses = jiraCLIResponses;
-export const errorResponses = jiraErrorResponses;
-export const commandPatterns = jiraCommandPatterns;
-export const getMockResponse = getJiraMockResponse;
-export const getTestPatterns = getJiraTestPatterns;
-export const isValidCommand = isValidJiraCommand;

@@ -27,23 +27,34 @@ export {
   isGitHubError,
 } from './operations';
 
-// Mock responses (legacy support)
-const {
-  githubCLIResponses,
-  githubErrorResponses,
-  githubCommandPatterns,
-  getGitHubMockResponse,
-} = require('./mock-responses');
+// Mock responses (optional - only available in development builds)
+let mockResponses: Record<string, unknown> | null = null;
+let cliResponses: Record<string, string> | null = null;
+let errorResponses: Record<string, string> | null = null;
+let commandPatterns: Record<string, RegExp> | null = null;
+let getMockResponse: ((command: string) => string | null) | null = null;
 
-export const mockResponses = {
-  cliResponses: githubCLIResponses,
-  errorResponses: githubErrorResponses,
-  commandPatterns: githubCommandPatterns,
-  getMockResponse: getGitHubMockResponse,
+try {
+  const mockModule = require('./mock-responses');
+  cliResponses = mockModule.githubCLIResponses;
+  errorResponses = mockModule.githubErrorResponses;
+  commandPatterns = mockModule.githubCommandPatterns;
+  getMockResponse = mockModule.getGitHubMockResponse;
+
+  mockResponses = {
+    cliResponses,
+    errorResponses,
+    commandPatterns,
+    getMockResponse,
+  };
+} catch (err) {
+  // Mock responses not available in production build
+}
+
+export {
+  mockResponses,
+  cliResponses,
+  errorResponses,
+  commandPatterns,
+  getMockResponse,
 };
-
-// Legacy exports for backward compatibility
-export const cliResponses = githubCLIResponses;
-export const errorResponses = githubErrorResponses;
-export const commandPatterns = githubCommandPatterns;
-export const getMockResponse = getGitHubMockResponse;
